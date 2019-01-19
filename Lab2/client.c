@@ -14,6 +14,19 @@
 #include <errno.h>
 #include <arpa/inet.h> 
 
+/**
+ *@author Eric Cheng
+ *@date 18 January, 2019
+ *@class COEN 146 Computer Networks
+ *
+ *This program models the client side of the client server 
+ *model of connection using the TCP form of package transmission.
+ *For this program, there will be a binary file being read 
+ *and written by ten byte chunks. The data will be read on the
+ *client side, and will be sent to the server side to be written
+ *in the destination file. The IP address and the port will be
+ *specified by the user.
+ */
 
 int main (int, char *[]);
 
@@ -29,6 +42,7 @@ int main (int argc, char *argv[])
 	char *p;
 	struct sockaddr_in serv_addr;
 	
+	// Checks to see number of arguments (./client, IP, Port, input file, output file)
 	if (argc != 5)
 	{
 		printf ("Usage: %s <ip of server>  \n",argv[0]);
@@ -55,7 +69,7 @@ int main (int argc, char *argv[])
 
 	// set address
 	serv_addr.sin_family = AF_INET;
-	serv_addr.sin_port = htons(atoi(argv[1])); 
+	serv_addr.sin_port = htons(atoi(argv[1])); // Makes port into integer
 
 	if (inet_pton (AF_INET, argv[2], &serv_addr.sin_addr) <= 0)
 	{
@@ -73,6 +87,7 @@ int main (int argc, char *argv[])
 	write(sockfd, argv[4], strlen(argv[4]) + 1);
 	read(sockfd, buff, sizeof(buff));
 
+	// Reads from the input file
 	int total;
 	while((total = fread(buff, 1, 10 , fp)) > 0)
 	{

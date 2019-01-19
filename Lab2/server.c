@@ -14,8 +14,20 @@
 #include <sys/types.h>
 #include <ctype.h>
 
+/**
+ *@author Eric Cheng
+ *@date 18 January, 2019
+ *@class COEN 146 Computer Networks
+ *
+ *This program models the server side of the client server 
+ *model of connection using the TCP form of package transmission.
+ *For this program, there will be a binary file being read 
+ *and written by ten byte chunks. The data will be read on the
+ *client side, and will be sent to the server side to be written
+ *in the destination file. The IP address and the port will be
+ *specified by the user.
+ */
 int main (int, char *[]); 
-
 
 /*********************
  * main
@@ -66,6 +78,7 @@ int main (int argc, char *argv[])
 			*/
 			if(np == NULL)
 			{
+				// Opens the file
 				np = fopen(buff, "wb");
 				memset(buff, '0', sizeof(buff));
 				p = buff;
@@ -73,13 +86,14 @@ int main (int argc, char *argv[])
 				write(connfd, buff, sizeof(buff));
 			}	
 			else
-			{
+			{	
+				//Write to the destination file
 				fwrite(buff, 1, n, np);
 			}	
 		}
         	close (connfd);
 		fclose(np);
-		np = NULL;
+		np = NULL; // Need to set null to return to initialized
 	}
 	return 0;
 }
