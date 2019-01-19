@@ -1,4 +1,4 @@
- /**************************
+ /**************************	
  *     socket example, server
  *     Winter 2019
  ***************************/
@@ -26,7 +26,10 @@ int main (int argc, char *argv[])
 	char *p; 
 	int listenfd = 0, connfd = 0;
 	struct sockaddr_in serv_addr; 
-	char buff[1025];
+	char buff[10];
+
+	// Write to output file dest.txt
+	FILE * np = NULL;
 
 	// set up
 	memset (&serv_addr, '0', sizeof (serv_addr));
@@ -34,13 +37,13 @@ int main (int argc, char *argv[])
 
 	serv_addr.sin_family = AF_INET;
 	serv_addr.sin_addr.s_addr = htonl (INADDR_ANY);
-	serv_addr.sin_port = htons (5000); 
+	serv_addr.sin_port = htons(atoi(argv[1])); 
 
 	// create socket, bind, and listen
 	listenfd = socket (AF_INET, SOCK_STREAM, 0);
 	bind (listenfd, (struct sockaddr*)&serv_addr, sizeof (serv_addr)); 
 	listen (listenfd, 10); 
-
+	
 	// accept and interact
 	while (1)
 	{
@@ -49,6 +52,7 @@ int main (int argc, char *argv[])
 		// receive data and reply
 		while ((n = read (connfd, buff, sizeof (buff))) > 0)
 		{
+			/**
 			// change lower to upper case 
 			p = buff;
 			while (*p != '\0')
@@ -59,10 +63,23 @@ int main (int argc, char *argv[])
 			}
 
         		write (connfd, buff, p - buff + 1); 
+			*/
+			if(np == NULL)
+			{
+				np = fopen(buff, "wb");
+				memset(buff, '0', sizeof(buff));
+				p = buff;
+				*p = '1';
+				write(connfd, buff, sizeof(buff));
+			}	
+			else
+			{
+				fwrite(buff, 1, n, np);
+			}	
 		}
-
         	close (connfd);
+		fclose(np);
+		np = NULL;
 	}
-
 	return 0;
 }
