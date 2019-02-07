@@ -14,7 +14,8 @@
 #include <unistd.h>
 #include <errno.h>
 #include <arpa/inet.h> 
-
+#include <fstream>
+#include <string>
 
 /********************
  * main
@@ -28,6 +29,17 @@ int main()
 	socklen_t addr_len;
 	host= (struct hostent *) gethostbyname((char *)"127.0.0.1");
 	int state;
+
+	PACKET *a = (PACKET *) malloc(sizeof(PACKET));
+	PACKET *b = (PACKEt *) malloc(sizeof(PACKET));
+
+	a -> header.seq_ack = 0;
+	a -> header.length = 0;
+	a -> header.checksum = 0;
+	for(int i = 0; i < SIZE, i++)
+	{
+		a.data[i] = 0;
+	}
 
 	// open socket
 	if ((sock = socket(AF_INET, SOCK_DGRAM, 0)) == -1)
@@ -44,7 +56,7 @@ int main()
 	while (1)
 	{
    		printf("Client: Type a message (OR q/ Q to quit): \t");
-    		scanf("%s", send_data); //input message
+    		//fread(a, 1, )
 
    		if ((strcmp(send_data , "q") == 0) || strcmp(send_data , "Q") == 0)
 		{
@@ -56,5 +68,8 @@ int main()
      					 (struct sockaddr *)&server_addr, sizeof(struct sockaddr)); //send to server
 		}
    	}
+	close(sock);
+	free(a);
+	free(b);
 }
 

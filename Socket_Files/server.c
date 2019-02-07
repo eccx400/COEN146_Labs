@@ -22,11 +22,11 @@ int main (int, char *[]);
 int main (int argc, char *argv[])
 {
 	char	c = '\0';
-	int		n;
+	int	n;
 	char	*p; 
-    int		listenfd = 0, connfd = 0;
-    struct	sockaddr_in serv_addr; 
-    char	buff[1024];
+	int	listenfd = 0, connfd = 0;
+ 	struct	sockaddr_in serv_addr; 
+ 	char	buff[1024];
 	FILE	*fp;
 
 
