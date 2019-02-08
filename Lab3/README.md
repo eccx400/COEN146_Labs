@@ -1,8 +1,10 @@
+# COEN 146L Lab 3: TFv2: Stop and Wait for an Unreliable Channel
+
 This project consists of building an S&W (Stop and Wait) reliable protocol. TFv2 is going to be built on top
 of UDP, and it is supposed to provide a reliable transport service to TFv1 (developed in week 3, which needs
 to change to call your new send and receive functions and use buffers of same size). Messages are sent one
 at a time, and each message needs to be acknowledged when received, before a new message can be sent.
-TFv2 implements basically the protocol rdt2.2 presented in the text book.i
+TFv2 implements basically the protocol rdt2.2 presented in the text book.
 
 TFv2 consists of a client and a server. Communication is unidirectional, i.e., data flows from the client to
 the server. The server starts first and waits for messages. The client starts the communication. Messages
