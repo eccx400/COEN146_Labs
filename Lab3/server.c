@@ -23,6 +23,8 @@
  * to change to call your new send and receive functions and use buffers of same size). Messages are sent one
  * at a time, and each message needs to be acknowledged when received, before a new message can be sent.
  * TFv2 implements basically the protocol rdt2.2 presented in the text book.
+ *
+ * For testing, start with the server first.
  */
 
 /*********************
@@ -35,7 +37,7 @@ int main(int argc, char * argv[])
     char recv_data[1024];
     struct sockaddr_in server_addr , client_addr;
     socklen_t addr_len, caddr_len;
-    int state;
+    int state = 0; // Start in 0 state wait
 
 	PACKET * a = (PACKET * ) malloc(sizeof(PACKET)) ; //Send
 	PACKET * b = (PACKET * ) malloc(sizeof(PACKET)); //Response
@@ -79,7 +81,7 @@ int main(int argc, char * argv[])
 		(a)->header.checksum = 0;
 		state = (acknum + 1) % 2;
 
-		if(a->header.checksum != check_sum)
+		if(calc_checksum(a, sizeof(PACKET)) != check_sum)
 		{	
 			(b)->header.seq_ack = state; // Checksum failed
 			sendto (sock, b, sizeof(PACKET), 0, (struct sockaddr *)&client_addr, addr_len);

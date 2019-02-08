@@ -37,7 +37,7 @@ int main(int argc, char * argv[])
 	char send_data[10]; // Send 10 bytes at a time
 	socklen_t addr_len;
 	host= (struct hostent *) gethostbyname((char *)"127.0.0.1");
-	int state = 0;
+	int state = 0; // Start in 0 state
 	
 	PACKET * a = (PACKET * ) malloc(sizeof(PACKET)); //Send
 	PACKET * b = (PACKET * ) malloc(sizeof(PACKET));  //Response 
@@ -74,16 +74,19 @@ int main(int argc, char * argv[])
 	int ack_num, length;
 	while(!feof(fp)) //While there is still data in the input file
 	{
+		// Get the input data from the file (Reads by 10 bytes)
 		length = fread(send_data, sizeof(char), 10, fp);
-		strcpy((*a).data,send_data);
+		strcpy((*a).data, send_data);
 
+		// Setup header data for sending packet
 		(a)->header.seq_ack = state;
 		(a)->header.length = length;
 
+		// Does the checksum
 		do
 		{
 			(a)->header.checksum = 0;
-			(a)->header.checksum = (a)->header.checksum;
+			(a)->header.checksum = calc_checksum(a, sizeof(PACKET));
 			printf("Checksum Value:%d\n",(a)->header.checksum);
 			
 			// Send to server
@@ -95,7 +98,7 @@ int main(int argc, char * argv[])
 		
 		}while((b)->header.seq_ack != state);
 		//Exit loop if return right ack
-		state = (state + 1) % 2;
+		state = (state + 1) % 2; // Alternate the states between 0 and 1
 	}
 	free(a);
 	free(b);
@@ -117,9 +120,6 @@ int main(int argc, char * argv[])
      					 (struct sockaddr *)&server_addr, sizeof(struct sockaddr)); //send to server
 		}
    	}
-	close(sock);
-	free(a);
-	free(b);
 	*/
 	return 0;
 }
