@@ -1,7 +1,5 @@
-#include <fstream>
 #include <stdlib.h>
 #include <stdio.h>
-#include <string>
 
 #define SIZE 10
 
@@ -16,10 +14,10 @@ typedef struct PACKET{
 	char data[SIZE];
 };
 
-int calc_checksum (Packet * pkt, int nBytes){
+int calc_checksum (PACKET * pkt, int nBytes){
 	int i = 0;
 	char cs = 0;
-	char * p = (char *) pkt)
+	char * p = (char *) pkt;
 	for(i = 0; i < nBytes; ++i)
 	{
 		cs = cs ^ *p;

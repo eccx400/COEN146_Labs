@@ -14,13 +14,25 @@
 #include <unistd.h>
 #include <errno.h>
 #include <arpa/inet.h> 
-#include <fstream>
-#include <string>
+
+int checksum (PACKET * p, size_t size)
+{	
+	(*p)-> HEADER.checksum = 0;
+	char * header = (char *) p;
+	char sum = header[0];
+
+	for(int i = 0; i < size - 1; i++)
+	{
+		sum ^= header[i]; // XOR for checksum
+	}
+	return (int) sum;
+		
+}
 
 /********************
  * main
  ********************/
-int main()
+int main(int argc, char * argv[])
 {
 	int sock;
 	struct sockaddr_in server_addr;
@@ -31,12 +43,12 @@ int main()
 	int state;
 
 	PACKET *a = (PACKET *) malloc(sizeof(PACKET));
-	PACKET *b = (PACKEt *) malloc(sizeof(PACKET));
+	PACKET *b = (PACKET *) malloc(sizeof(PACKET));
 
-	a -> header.seq_ack = 0;
-	a -> header.length = 0;
-	a -> header.checksum = 0;
-	for(int i = 0; i < SIZE, i++)
+	a -> HEADER.seq_ack = 0;
+	a -> HEADER.length = 0;
+	a -> HEADER.checksum = 0;
+	for(int i = 0; i < SIZE; i++)
 	{
 		a.data[i] = 0;
 	}
@@ -47,6 +59,13 @@ int main()
 		perror("socket");
 		exit(1);
 	}
+
+	//Input file to read from src.txt
+	FILE * fp = fopen(argv[3], "rb");
+	if(!fp)
+	{
+		printf("File cannot be opened");
+	} 
 
 	// set address
 	server_addr.sin_family = AF_INET;
