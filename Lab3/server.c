@@ -48,30 +48,30 @@ int main()
   	addr_len = sizeof(struct sockaddr);
 	printf("\t\t\t\t\t\t\nUDPServer Waiting for client on port 5000\n");
 	
-	int length, acknum, bytes;
+	int length, acknum, nbytes, j;
 	char data[10];
 	while(length > 0)
 	{
-		bytes = recvfrom (sock, buffer, sizeof(PACKET), 0 , struct(sockaddr *) &client_addr, &addr_len);
+		nbytes = recvfrom (sock, a, sizeof(PACKET), 0 , struct(sockaddr *) &client_addr, &addr_len);
 
-		length = (*a)->HEADER.length;
-		acknum = (*a)->HEADER.seq_ack;
+		length = (a)->header.length;
+		acknum = (a)->header.seq_ack;
 		strcpy(data, (*a).data);
-		for(int j = 0; j < 9; j++)
+		for(j = 0; j < 9; j++)
 		{
-			printf("Output is: " %s\n, data[j]);
+			printf("Output is:  %s\n", data[j]);
 		}
 
-		int checksum = (*a)->HEADER.checksum;
-		(*a)->HEADER.checksum = 0;
+		int check_sum = (a)->header.checksum;
+		(a)->header.checksum = 0;
 
-		if(checksum(a, sizeof(PACKET) != checksum)
+		if(a->header.checksum != check_sum)
 		{	
-			sendto (sock, b, sizeof(PACKET), 0, (struct sockaddr *)&clientAddr, addr_len);
+			sendto (sock, b, sizeof(PACKET), 0, (struct sockaddr *)&client_addr, addr_len);
 		}
 
-		(*b)->HEADER.seq_ack = acknum;
-		sendto (sock, b, sizeof(PACKET), 0, (struct sockaddr *)&clientAddr, addr_len);
+		(b)->header.seq_ack = acknum;
+		sendto (sock, b, sizeof(PACKET), 0, (struct sockaddr *)&client_addr, addr_len);
 		
 	}
 

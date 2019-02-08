@@ -28,8 +28,8 @@ int main(int argc, char * argv[])
 	host= (struct hostent *) gethostbyname((char *)"127.0.0.1");
 	int state = 0;
 	
-	Packet * a; //Send
-	Packet * b; //Response 
+	PACKET * a; //Send
+	PACKET * b; //Response 
 
 	/**
 	PACKET *a = (PACKET *) malloc(sizeof(PACKET));
@@ -66,23 +66,23 @@ int main(int argc, char * argv[])
 	int ack_num, length;
 	while(!feof(fp))
 	{
-		(*a)->HEADER.seq_ack = state;
-		(*a)->HEADER.length = len;
+		(a)->header.seq_ack = state;
+		(a)->header.length = length;
 
 		do
 		{
-			(*a)->HEADER.checksum = 0;
-			(*a)->HEADER.checksum = checksum(a ,sizeof(PACKET));
-			printf("Checksum Value:%d\n",(*a)->HEADER.checksum);
+			(a)->header.checksum = 0;
+			(a)->header.checksum = checksum(a ,sizeof(PACKET));
+			printf("Checksum Value:%d\n",(a)->header.checksum);
 			
 			// Send to server
-			sendto (sock, a, sizeof(PACKET), 0, (struct sockaddr *)&serverAddr, addr_len);
+			sendto (sock, a, sizeof(PACKET), 0, (struct sockaddr *)&server_addr, addr_len);
 
 			//Receive from server
 			recvfrom (sock, b, sizeof(PACKET), 0, NULL, NULL);
 
 		
-		}while((*b)->HEADER.seq_ack != state);
+		}while((b)->header.seq_ack != state);
 	}
 	fclose(fp);
 	

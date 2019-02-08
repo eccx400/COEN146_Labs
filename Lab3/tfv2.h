@@ -3,16 +3,16 @@
 
 #define SIZE 10
 
-typedef struct HEADER {
+typedef struct{
 	int seq_ack; // will always be 0 or 1
 	int length; // how many bytes of data you have
 	int checksum; // checksum calculated by XORing bytes in packet
-};
+}HEADER;
 
-typedef struct PACKET{
+typedef struct{
 	HEADER header;
 	char data[SIZE];
-};
+}PACKET;
 
 int calc_checksum (PACKET * pkt, int nBytes){
 	int i = 0;
