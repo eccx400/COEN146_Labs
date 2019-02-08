@@ -13,21 +13,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <errno.h>
-#include <arpa/inet.h> 
-
-int checksum (PACKET * p, size_t size)
-{	
-	(*p)-> HEADER.checksum = 0;
-	char * header = (char *) p;
-	char sum = header[0];
-
-	for(int i = 0; i < size - 1; i++)
-	{
-		sum ^= header[i]; // XOR for checksum
-	}
-	return (int) sum;
-		
-}
+#include <arpa/inet.h>
 
 /********************
  * main
@@ -37,11 +23,15 @@ int main(int argc, char * argv[])
 	int sock;
 	struct sockaddr_in server_addr;
 	struct hostent *host;
-	char send_data[1024];
+	char send_data[10]; // Send 10 bytes at a time
 	socklen_t addr_len;
 	host= (struct hostent *) gethostbyname((char *)"127.0.0.1");
-	int state;
+	int state = 0;
+	
+	Packet * a; //Send
+	Packet * b; //Response 
 
+	/**
 	PACKET *a = (PACKET *) malloc(sizeof(PACKET));
 	PACKET *b = (PACKET *) malloc(sizeof(PACKET));
 
@@ -52,6 +42,7 @@ int main(int argc, char * argv[])
 	{
 		a.data[i] = 0;
 	}
+	*/
 
 	// open socket
 	if ((sock = socket(AF_INET, SOCK_DGRAM, 0)) == -1)
@@ -72,6 +63,30 @@ int main(int argc, char * argv[])
 	server_addr.sin_port = htons(5000);
 	server_addr.sin_addr = *((struct in_addr *)host->h_addr);
 
+	int ack_num, length;
+	while(!feof(fp))
+	{
+		(*a)->HEADER.seq_ack = state;
+		(*a)->HEADER.length = len;
+
+		do
+		{
+			(*a)->HEADER.checksum = 0;
+			(*a)->HEADER.checksum = checksum(a ,sizeof(PACKET));
+			printf("Checksum Value:%d\n",(*a)->HEADER.checksum);
+			
+			// Send to server
+			sendto (sock, a, sizeof(PACKET), 0, (struct sockaddr *)&serverAddr, addr_len);
+
+			//Receive from server
+			recvfrom (sock, b, sizeof(PACKET), 0, NULL, NULL);
+
+		
+		}while((*b)->HEADER.seq_ack != state);
+	}
+	fclose(fp);
+	
+	/**
 	while (1)
 	{
    		printf("Client: Type a message (OR q/ Q to quit): \t");
@@ -90,5 +105,7 @@ int main(int argc, char * argv[])
 	close(sock);
 	free(a);
 	free(b);
+	*/
+	return 0;
 }
 

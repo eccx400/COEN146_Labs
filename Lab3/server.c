@@ -23,8 +23,11 @@ int main()
     int bytes_read;
     char recv_data[1024];
     struct sockaddr_in server_addr , client_addr;
-    socklen_t addr_leno;
+    socklen_t addr_len, caddr_len;
     int state;
+
+	PACKET * a; //
+	PACKET * b;
 
 	//Open socket
         if ((sock = socket(AF_INET, SOCK_DGRAM, 0)) == -1) {
@@ -45,12 +48,41 @@ int main()
   	addr_len = sizeof(struct sockaddr);
 	printf("\t\t\t\t\t\t\nUDPServer Waiting for client on port 5000\n");
 	
-while (1) {
-   	     //Receive from client
+	int length, acknum, bytes;
+	char data[10];
+	while(length > 0)
+	{
+		bytes = recvfrom (sock, buffer, sizeof(PACKET), 0 , struct(sockaddr *) &client_addr, &addr_len);
+
+		length = (*a)->HEADER.length;
+		acknum = (*a)->HEADER.seq_ack;
+		strcpy(data, (*a).data);
+		for(int j = 0; j < 9; j++)
+		{
+			printf("Output is: " %s\n, data[j]);
+		}
+
+		int checksum = (*a)->HEADER.checksum;
+		(*a)->HEADER.checksum = 0;
+
+		if(checksum(a, sizeof(PACKET) != checksum)
+		{	
+			sendto (sock, b, sizeof(PACKET), 0, (struct sockaddr *)&clientAddr, addr_len);
+		}
+
+		(*b)->HEADER.seq_ack = acknum;
+		sendto (sock, b, sizeof(PACKET), 0, (struct sockaddr *)&clientAddr, addr_len);
+		
+	}
+
+	/**
+	while (1) {
+   	  	//Receive from client
 	        bytes_read = recvfrom(sock,recv_data,1024,0, (struct sockaddr *)&client_addr, &addr_len);
 		    recv_data[bytes_read] = '\0';
        		printf("\t\t\t\t Server: The Client (%s , %d) said : ",inet_ntoa(client_addr.sin_addr),ntohs(client_addr.sin_port));
        	 	printf("%s\n", recv_data);
   	}
+	*/
  	return 0;
 }

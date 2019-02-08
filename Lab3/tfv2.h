@@ -20,7 +20,7 @@ int calc_checksum (PACKET * pkt, int nBytes){
 	char * p = (char *) pkt;
 	for(i = 0; i < nBytes; ++i)
 	{
-		cs = cs ^ *p;
+		cs ^= *p;
 		++p;
 	}
 	return (int) cs;
