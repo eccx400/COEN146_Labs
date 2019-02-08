@@ -18,6 +18,12 @@
 /**
  * @author Eric Cheng
  * @date 4 February, 2019
+ *
+ * This project consists of building an S&W (Stop and Wait) reliable protocol. TFv2 is going to be built on top
+ * of UDP, and it is supposed to provide a reliable transport service to TFv1 (developed in week 3, which needs
+ * to change to call your new send and receive functions and use buffers of same size). Messages are sent one
+ * at a time, and each message needs to be acknowledged when received, before a new message can be sent.
+ * TFv2 implements basically the protocol rdt2.2 presented in the text book.
  */
 
 /********************
@@ -33,13 +39,10 @@ int main(int argc, char * argv[])
 	host= (struct hostent *) gethostbyname((char *)"127.0.0.1");
 	int state = 0;
 	
-	PACKET * a; //Send
-	PACKET * b; //Response 
+	PACKET * a = (PACKET * ) malloc(sizeof(PACKET)); //Send
+	PACKET * b = (PACKET * ) malloc(sizeof(PACKET));  //Response 
 
 	/**
-	PACKET *a = (PACKET *) malloc(sizeof(PACKET));
-	PACKET *b = (PACKET *) malloc(sizeof(PACKET));
-
 	a -> HEADER.seq_ack = 0;
 	a -> HEADER.length = 0;
 	a -> HEADER.checksum = 0;
@@ -94,6 +97,8 @@ int main(int argc, char * argv[])
 		//Exit loop if return right ack
 		state = (state + 1) % 2;
 	}
+	free(a);
+	free(b);
 	fclose(fp);
 	
 	/**
