@@ -34,7 +34,7 @@ int main(int argc, char * argv[])
 {
     int sock;
     int bytes_read;
-    char recv_data[1024];
+    char recv_data[10];
     struct sockaddr_in server_addr , client_addr;
     socklen_t addr_len, caddr_len;
     int state = 0; // Start in 0 state wait
@@ -61,6 +61,7 @@ int main(int argc, char * argv[])
   	addr_len = sizeof(struct sockaddr);
 	printf("\t\t\t\t\t\t\nUDPServer Waiting for client on port 5000\n");
 	
+	FILE * np = NULL;
 	int length, acknum, j;
 	char data[10];
 	while(length > 0)
@@ -70,7 +71,7 @@ int main(int argc, char * argv[])
 
 		length = (a)->header.length;
 		acknum = (a)->header.seq_ack;
-		strcpy(data, (*a).data);
+		memcpy(recv_data, (*a).data, sizeof(PACKET));
 		for(j = 0; j < 9; j++)
 		{
 			printf("Output is:  %s\n", data[j]);
@@ -85,11 +86,23 @@ int main(int argc, char * argv[])
 		{	
 			(b)->header.seq_ack = state; // Checksum failed
 			sendto (sock, b, sizeof(PACKET), 0, (struct sockaddr *)&client_addr, addr_len);
+			continue;
+		}
+		
+		// If output file not created, fopen to open it; if created; fwrite to write to it
+		if(np == NULL)
+		{
+			np = fopen(recv_data, "wb");		
+		}
+		else
+		{
+			fwrite(recv_data, sizeof(char), length, np);
 		}
 
 		(b)->header.seq_ack = acknum;
 		sendto (sock, b, sizeof(PACKET), 0, (struct sockaddr *)&client_addr, addr_len);
 	}
+	fclose(np);
 	free(a);
 	free(b);
 	/**

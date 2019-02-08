@@ -71,12 +71,12 @@ int main(int argc, char * argv[])
 	server_addr.sin_port = htons(5000);
 	server_addr.sin_addr = *((struct in_addr *)host->h_addr);
 
-	int ack_num, length;
+	int ack_num, length, count;
 	while(!feof(fp)) //While there is still data in the input file
 	{
 		// Get the input data from the file (Reads by 10 bytes)
 		length = fread(send_data, sizeof(char), 10, fp);
-		strcpy((*a).data, send_data);
+		memcpy((*a).data, send_data, sizeof(PACKET));
 
 		// Setup header data for sending packet
 		(a)->header.seq_ack = state;
@@ -85,21 +85,30 @@ int main(int argc, char * argv[])
 		// Does the checksum
 		do
 		{
+			count = 0;
 			(a)->header.checksum = 0;
 			(a)->header.checksum = calc_checksum(a, sizeof(PACKET));
 			printf("Checksum Value:%d\n",(a)->header.checksum);
 			
-			// Send to server
-			sendto (sock, a, sizeof(PACKET), 0, (struct sockaddr *)&server_addr, addr_len);
+			if( count == 3)
+			{
+				exit(EXIT_FAILURE);
+			}
+			else
+			{	
+				count++;		
+				// Send to server
+				sendto (sock, a, sizeof(PACKET), 0, (struct sockaddr *)&server_addr, addr_len);
 
-			//Receive from server
-			recvfrom (sock, b, sizeof(PACKET), 0, NULL, NULL);
-
-		
+				//Receive from server
+				recvfrom (sock, b, sizeof(PACKET), 0, NULL, NULL);
+				continue;
+			}	
 		}while((b)->header.seq_ack != state);
 		//Exit loop if return right ack
 		state = (state + 1) % 2; // Alternate the states between 0 and 1
 	}
+	close(sock);
 	free(a);
 	free(b);
 	fclose(fp);
