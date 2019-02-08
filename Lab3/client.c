@@ -15,6 +15,11 @@
 #include <errno.h>
 #include <arpa/inet.h>
 
+/**
+ * @author Eric Cheng
+ * @date 4 February, 2019
+ */
+
 /********************
  * main
  ********************/
@@ -64,15 +69,18 @@ int main(int argc, char * argv[])
 	server_addr.sin_addr = *((struct in_addr *)host->h_addr);
 
 	int ack_num, length;
-	while(!feof(fp))
+	while(!feof(fp)) //While there is still data in the input file
 	{
+		length = fread(send_data, sizeof(char), 10, fp);
+		strcpy((*a).data,send_data);
+
 		(a)->header.seq_ack = state;
 		(a)->header.length = length;
 
 		do
 		{
 			(a)->header.checksum = 0;
-			(a)->header.checksum = checksum(a ,sizeof(PACKET));
+			(a)->header.checksum = (a)->header.checksum;
 			printf("Checksum Value:%d\n",(a)->header.checksum);
 			
 			// Send to server
@@ -83,6 +91,8 @@ int main(int argc, char * argv[])
 
 		
 		}while((b)->header.seq_ack != state);
+		//Exit loop if return right ack
+		state = (state + 1) % 2;
 	}
 	fclose(fp);
 	
