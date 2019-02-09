@@ -36,14 +36,14 @@ int main(int argc, char * argv[])
 	struct hostent *host;
 	char send_data[10]; // Send 10 bytes at a time
 	socklen_t addr_len;
-	host= (struct hostent *) gethostbyname((char *)"127.0.0.1");
+	//host= (struct hostent *) gethostbyname((char *)"127.0.0.1");
 	int state = 0; // Start in 0 state
 	
 	
 	// Checks to see number of arguments (./client, IP, Port, input file, output file)
 	if (argc != 5)
         {
-                printf ("Usage: %s <ip of server>  \n",argv[0]);
+                printf ("Usage: %s <ip of server> <port> <input file> <output file> \n",argv[0]);
                 return 1;
         }
 
@@ -76,9 +76,13 @@ int main(int argc, char * argv[])
 
 	// set address
 	server_addr.sin_family = AF_INET;
-	server_addr.sin_port = htons(5000); // Makes port into integer
-	server_addr.sin_addr = *((struct in_addr *)host->h_addr);	
-
+	server_addr.sin_port = htons(atoi(argv[1])); // Makes port into integer
+	server_addr.sin_addr = *((struct in_addr *)host->h_addr);
+	inet_pton(AF_INET, argv[2], &server_addr.sin_addr.s_addr);	
+	memset (server_addr.sin_zero, '\0', sizeof (server_addr.sin_zero));
+	
+	sock = socket (PF_INET, SOCK_DGRAM, 0);
+		
 	int ack_num, length, count, lol;
 
 	//
@@ -101,6 +105,13 @@ int main(int argc, char * argv[])
 		else
 		{	
 			count++;		
+			
+			if(rand % 100 < 20)
+			{
+				(b)->header.checksum = 0;
+				printf("Random checksum");
+			}
+			
 			// Send to server
 			sendto (sock, a, sizeof(PACKET), 0, (struct sockaddr *)&server_addr, addr_len);
 
@@ -112,7 +123,7 @@ int main(int argc, char * argv[])
 			continue;
 		}	
 	}while((b)->header.seq_ack != state && lol != b->header.checksum);
-
+	printf("Good ACK received");
 	state = (state + 1) % 2;
 
 	while(!feof(fp)) //While there is still data in the input file

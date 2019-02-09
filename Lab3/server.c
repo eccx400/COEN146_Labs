@@ -39,6 +39,12 @@ int main(int argc, char * argv[])
     socklen_t addr_len, caddr_len;
     int state = 0; // Start in 0 state wait
 
+	if(argc != 2)
+	{
+		printf ("Usage: %s <port> \n", argv[0]);
+		return 1;
+	}
+	
 	PACKET * a = (PACKET * ) malloc(sizeof(PACKET)) ; //Send
 	PACKET * b = (PACKET * ) malloc(sizeof(PACKET)); //Response
 
@@ -50,8 +56,9 @@ int main(int argc, char * argv[])
 
 	// Set address
     	server_addr.sin_family = AF_INET;
-   	server_addr.sin_port = htons(5000);
-    	server_addr.sin_addr.s_addr = (INADDR_ANY);
+   	server_addr.sin_port = htons((short)atoi(argv[1]));
+    	server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+	memset ((char *) server_addr.sin_zero, '\0', sizeof (server_addr.sin_zero));
 
 	 //Bind socket to address
    	 if (bind(sock,(struct sockaddr *)&server_addr, sizeof(struct sockaddr)) == -1)
@@ -59,13 +66,12 @@ int main(int argc, char * argv[])
         	perror("Bind");
         	exit(1);
     	}
-  	addr_len = sizeof(struct sockaddr);
+  	addr_len = sizeof(server_addr);
 	printf("UDP server waiting for packages");
 	
 	FILE * np = NULL;
 	int length, acknum, j;
-	char data[10];
-	while(1)
+	while(length > 0)
 	{
 		//recvfrom(int sockfd, void *buf, size_t len, int flags, struct(sockaddr *) &src_addr, socklen_t *addrlen);
 		bytes_read = recvfrom (sock, a, sizeof(PACKET), 0 , (struct sockaddr *) &client_addr, &addr_len);
@@ -76,18 +82,17 @@ int main(int argc, char * argv[])
 		memcpy(recv_data, (*a).data, sizeof(PACKET));
 		for(j = 0; j < 9; j++)
 		{
-			printf("Output is:  %c\n", data[j]);
+			printf("Output is:  %c\n", recv_data[j]);
 		}
 		
 		//Checksum
 		int check_sum = (a)->header.checksum;
 		(a)->header.checksum = 0;
-		state = (acknum + 1) % 2;
 
 		if(calc_checksum(a, sizeof(HEADER) + a->header.length) != check_sum)
 		{
 			printf("The checksum failed");	
-			(b)->header.seq_ack = state; // Checksum failed
+			(b)->header.seq_ack = (acknum + 1) % 2; // Checksum failed
 			sendto (sock, b, sizeof(PACKET), 0, (struct sockaddr *)&client_addr, addr_len);
 			continue;
 		}
