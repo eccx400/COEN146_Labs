@@ -47,10 +47,11 @@ int main(int argc, char * argv[])
             perror("Socket");
             exit(1);
         }
+
 	// Set address
     	server_addr.sin_family = AF_INET;
    	server_addr.sin_port = htons(5000);
-    	server_addr.sin_addr.s_addr = INADDR_ANY;
+    	server_addr.sin_addr.s_addr = (INADDR_ANY);
 
 	 //Bind socket to address
    	 if (bind(sock,(struct sockaddr *)&server_addr, sizeof(struct sockaddr)) == -1)
@@ -59,22 +60,23 @@ int main(int argc, char * argv[])
         	exit(1);
     	}
   	addr_len = sizeof(struct sockaddr);
-	printf("\t\t\t\t\t\t\nUDPServer Waiting for client on port 5000\n");
+	printf("UDP server waiting for packages");
 	
 	FILE * np = NULL;
 	int length, acknum, j;
 	char data[10];
-	while(length > 0)
+	while(1)
 	{
 		//recvfrom(int sockfd, void *buf, size_t len, int flags, struct(sockaddr *) &src_addr, socklen_t *addrlen);
 		bytes_read = recvfrom (sock, a, sizeof(PACKET), 0 , (struct sockaddr *) &client_addr, &addr_len);
-
+		perror("Okay");
+	
 		length = (a)->header.length;
 		acknum = (a)->header.seq_ack;
 		memcpy(recv_data, (*a).data, sizeof(PACKET));
 		for(j = 0; j < 9; j++)
 		{
-			printf("Output is:  %s\n", data[j]);
+			printf("Output is:  %c\n", data[j]);
 		}
 		
 		//Checksum
@@ -82,8 +84,9 @@ int main(int argc, char * argv[])
 		(a)->header.checksum = 0;
 		state = (acknum + 1) % 2;
 
-		if(calc_checksum(a, sizeof(PACKET)) != check_sum)
-		{	
+		if(calc_checksum(a, sizeof(HEADER) + a->header.length) != check_sum)
+		{
+			printf("The checksum failed");	
 			(b)->header.seq_ack = state; // Checksum failed
 			sendto (sock, b, sizeof(PACKET), 0, (struct sockaddr *)&client_addr, addr_len);
 			continue;
@@ -92,11 +95,13 @@ int main(int argc, char * argv[])
 		// If output file not created, fopen to open it; if created; fwrite to write to it
 		if(np == NULL)
 		{
-			np = fopen(recv_data, "wb");		
+			np = fopen(recv_data, "wb");
+			printf("The output file has been created");		
 		}
 		else
 		{
 			fwrite(recv_data, sizeof(char), length, np);
+			printf("Write into the existing output file");
 		}
 
 		(b)->header.seq_ack = acknum;

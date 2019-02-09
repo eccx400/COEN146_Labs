@@ -17,7 +17,7 @@
 /*********************
  * main
  *********************/
-int main()
+int main(int argc, char * argv[])
 {
     int sock;
     int bytes_read;
@@ -31,7 +31,7 @@ int main()
         }
 // Set address
     server_addr.sin_family = AF_INET;
-    server_addr.sin_port = htons(5000);
+    server_addr.sin_port = htons(atoi(argv[1]));
     server_addr.sin_addr.s_addr = INADDR_ANY;
 
  //Bind socket to address

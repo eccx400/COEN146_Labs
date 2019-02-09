@@ -18,14 +18,20 @@
 /********************
  * main
  ********************/
-int main()
+int main(int argc, char * argv[])
 {
 int sock;
 struct sockaddr_in server_addr;
 struct hostent *host;
 char send_data[1024];
 socklen_t addr_len;
-host= (struct hostent *) gethostbyname((char *)"127.0.0.1");
+host= (struct hostent *) gethostbyname(argv[2]);
+
+if(argc != 2)
+{
+	printf("Usage: %s <ip of server> \n", argv[0]);
+	return 1;
+}
 
 // open socket
 if ((sock = socket(AF_INET, SOCK_DGRAM, 0)) == -1)
@@ -36,7 +42,7 @@ exit(1);
 
 // set address
 server_addr.sin_family = AF_INET;
-server_addr.sin_port = htons(5000);
+server_addr.sin_port = htons(atoi(argv[1]));
 server_addr.sin_addr = *((struct in_addr *)host->h_addr);
 
 while (1)
