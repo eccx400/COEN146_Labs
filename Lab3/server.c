@@ -32,12 +32,12 @@
  *********************/
 int main(int argc, char * argv[])
 {
-    int sock;
-    int bytes_read;
-    char recv_data[10];
-    struct sockaddr_in server_addr , client_addr;
-    socklen_t addr_len, caddr_len;
-    int state = 0; // Start in 0 state wait
+	int sock;
+	int bytes_read;
+	char recv_data[10];
+	struct sockaddr_in server_addr , client_addr;
+	socklen_t addr_len, caddr_len;
+	int state = 0; // Start in 0 state wait
 
 	if(argc != 2)
 	{
@@ -67,11 +67,11 @@ int main(int argc, char * argv[])
         	exit(1);
     	}
   	addr_len = sizeof(server_addr);
-	printf("UDP server waiting for packages");
+	printf("UDP server waiting for packages\n");
 	
 	FILE * np = NULL;
 	int length, acknum, j;
-	while(length > 0)
+	while(1)
 	{
 		//recvfrom(int sockfd, void *buf, size_t len, int flags, struct(sockaddr *) &src_addr, socklen_t *addrlen);
 		bytes_read = recvfrom (sock, a, sizeof(PACKET), 0 , (struct sockaddr *) &client_addr, &addr_len);
@@ -93,19 +93,19 @@ int main(int argc, char * argv[])
 		{
 			printf("The checksum failed");	
 			(b)->header.seq_ack = (acknum + 1) % 2; // Checksum failed
-			sendto (sock, b, sizeof(PACKET), 0, (struct sockaddr *)&client_addr, addr_len);
+			sendto (sock, a, sizeof(PACKET), 0, (struct sockaddr *)&client_addr, addr_len);
 			continue;
 		}
 		
 		// If output file not created, fopen to open it; if created; fwrite to write to it
 		if(np == NULL)
 		{
-			np = fopen(recv_data, "wb");
+			np = fopen(a->data, "wb");
 			printf("The output file has been created");		
 		}
 		else
 		{
-			fwrite(recv_data, sizeof(char), length, np);
+			fwrite(a->data, sizeof(char), length, np);
 			printf("Write into the existing output file");
 		}
 
