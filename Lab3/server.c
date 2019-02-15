@@ -66,7 +66,7 @@ int main(int argc, char * argv[])
         	perror("Bind");
         	exit(1);
     	}
-  	addr_len = sizeof(server_addr);
+  	addr_len = sizeof(client_addr);
 	printf("UDP server waiting for packages\n");
 	
 	FILE * np = NULL;
@@ -76,19 +76,20 @@ int main(int argc, char * argv[])
 		//recvfrom(int sockfd, void *buf, size_t len, int flags, struct(sockaddr *) &src_addr, socklen_t *addrlen);
 		bytes_read = recvfrom (sock, a, sizeof(PACKET), 0 , (struct sockaddr *) &client_addr, &addr_len);
 		perror("Okay");
-	
-		length = (a)->header.length;
-		acknum = (a)->header.seq_ack;
-		memcpy(recv_data, (*a).data, sizeof(PACKET));
-		for(j = 0; j < 9; j++)
-		{
-			printf("Output is:  %c\n", recv_data[j]);
-		}
+		printf("Okay!\n");
 		
 		//Checksum
 		int check_sum = (a)->header.checksum;
 		(a)->header.checksum = 0;
 
+		length = (a)->header.length;
+		acknum = (a)->header.seq_ack;
+		memcpy(recv_data, a->data, sizeof(PACKET));
+		for(j = 0; j < 9; j++)
+		{
+			printf("Output is:  %c\n", recv_data[j]);
+		}
+		
 		if(calc_checksum(a, sizeof(HEADER) + a->header.length) != check_sum)
 		{
 			printf("The checksum failed");	

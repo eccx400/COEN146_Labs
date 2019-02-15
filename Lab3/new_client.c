@@ -102,6 +102,7 @@ int main(int argc, char * argv[])
 
 	while(bytes_read = recvfrom (sock, a, sizeof(PACKET), 0 , (struct sockaddr *) &server_addr, &addr_len) > 0)
 	{
+		printf("Goes in while loop\n");
 		if(b->header.seq_ack != state)
 		{
 			if(count <= 3)
@@ -121,9 +122,11 @@ int main(int argc, char * argv[])
 			break;
 		}
 	} 
-
+	printf("Completes first while loop \n");
+	
 	while(!feof(fp))
 	{
+		// Create packet
 		int bytes_length = fread(send_data, 1, 10, fp);
 		(a)->header.checksum = 0;
                 int check_sum = calc_checksum(a, sizeof(HEADER) + a->header.length);
@@ -140,6 +143,7 @@ int main(int argc, char * argv[])
 		a->header.checksum = check_sum;
 		sendto(sock, a, sizeof(PACKET), 0, (struct sockaddr *) &server_addr, addr_len);
 			
+		printf("Complete packet creation and sent\n");
 		while(bytes_read = recvfrom (sock, a, sizeof(PACKET), 0, (struct sockaddr *) &server_addr, &addr_len) > 0)
 		{	
 			if(b->header.seq_ack != state)
@@ -163,6 +167,7 @@ int main(int argc, char * argv[])
                 	}
 		}
 	}
+	printf("Finishes second loop\n");
 		
 	(a)->header.checksum = 0;
 	(a)->header.checksum = calc_checksum(a, sizeof(HEADER) + a->header.length);
