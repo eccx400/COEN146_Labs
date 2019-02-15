@@ -36,6 +36,7 @@ int main(int argc, char * argv[])
 	int bytes_read;
 	char recv_data[10];
 	struct sockaddr_in server_addr , client_addr;
+	struct sockaddr_storage server_storage;
 	socklen_t addr_len, caddr_len;
 	int state = 0; // Start in 0 state wait
 
@@ -46,10 +47,10 @@ int main(int argc, char * argv[])
 	}
 	
 	PACKET * a = (PACKET * ) malloc(sizeof(PACKET)) ; //Send
-	PACKET * b = (PACKET * ) malloc(sizeof(PACKET)); //Response
+	PACKET * b; //Response
 
 	//Open socket
-        if ((sock = socket(AF_INET, SOCK_DGRAM, 0)) == -1) {
+        if ((sock = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
             perror("Socket");
             exit(1);
         }
@@ -61,12 +62,12 @@ int main(int argc, char * argv[])
 	memset ((char *) server_addr.sin_zero, '\0', sizeof (server_addr.sin_zero));
 
 	 //Bind socket to address
-   	 if (bind(sock,(struct sockaddr *)&server_addr, sizeof(struct sockaddr)) == -1)
+   	if (bind(sock,(struct sockaddr *)&server_addr, sizeof(struct sockaddr)) != 0)
     	{
         	perror("Bind");
         	exit(1);
     	}
-  	addr_len = sizeof(client_addr);
+  	addr_len = sizeof(server_storage);
 	printf("UDP server waiting for packages\n");
 	
 	FILE * np = NULL;
@@ -75,9 +76,10 @@ int main(int argc, char * argv[])
 	{
 		//recvfrom(int sockfd, void *buf, size_t len, int flags, struct(sockaddr *) &src_addr, socklen_t *addrlen);
 		bytes_read = recvfrom (sock, a, sizeof(PACKET), 0 , (struct sockaddr *) &client_addr, &addr_len);
+		printf("Packet Data: %s\n", bytes_read);
 		perror("Okay");
 		printf("Okay!\n");
-		
+	
 		//Checksum
 		int check_sum = (a)->header.checksum;
 		(a)->header.checksum = 0;
@@ -85,10 +87,7 @@ int main(int argc, char * argv[])
 		length = (a)->header.length;
 		acknum = (a)->header.seq_ack;
 		memcpy(recv_data, a->data, sizeof(PACKET));
-		for(j = 0; j < 9; j++)
-		{
-			printf("Output is:  %c\n", recv_data[j]);
-		}
+		printf("Packet Data: %s\n", bytes_read);
 		
 		if(calc_checksum(a, sizeof(HEADER) + a->header.length) != check_sum)
 		{
@@ -102,11 +101,11 @@ int main(int argc, char * argv[])
 		if(np == NULL)
 		{
 			np = fopen(a->data, "wb");
-			printf("The output file has been created");		
+			printf("The output file has been created with input data");		
 		}
 		else
 		{
-			fwrite(a->data, sizeof(char), length, np);
+			fwrite(a->data, 1, length, np);
 			printf("Write into the existing output file");
 		}
 
@@ -114,8 +113,8 @@ int main(int argc, char * argv[])
 		sendto (sock, b, sizeof(PACKET), 0, (struct sockaddr *)&client_addr, addr_len);
 	}
 	fclose(np);
-	free(a);
-	free(b);
+	//free(a);
+	//free(b);
 	/**
 	while (1) {
    	  	//Receive from client

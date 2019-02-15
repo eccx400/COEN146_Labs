@@ -51,7 +51,7 @@ int main(int argc, char * argv[])
 	PACKET * a = (PACKET * ) malloc(sizeof(PACKET)); //Send
 	PACKET * b = (PACKET * ) malloc(sizeof(PACKET));  //Response 
 
-	printf("Pre precheck shit\n");
+	printf("Pre precheck stuff\n");
 	/**
 	a -> HEADER.seq_ack = 0;
 	a -> HEADER.length = 0;
@@ -75,7 +75,7 @@ int main(int argc, char * argv[])
 	{
 		printf("File cannot be opened");
 	}
-	printf("Precheck shit\n"); 
+	printf("Precheck stuff\n"); 
 
 	// set address
 	server_addr.sin_family = AF_INET;
@@ -90,7 +90,7 @@ int main(int argc, char * argv[])
 	int length, count, acknum;
 	length = 10;
 	count = 0;
-	printf("Check shit\n");
+	printf("Check stuff\n");
 
 	a->header.checksum = 0;
 	memcpy(a->data, argv[4], 10);
@@ -98,7 +98,7 @@ int main(int argc, char * argv[])
 	a->header.length = strlen(argv[4]) + 1;
 	a->header.checksum = calc_checksum(a, sizeof(HEADER) + a->header.length);
 	sendto (sock, a, sizeof(PACKET), 0, (struct sockaddr *)&server_addr, addr_len);
-	printf("Client do yo shit, Packet created\n");
+	printf("Client do yo stuff, Packet created\n");
 
 	while(bytes_read = recvfrom (sock, a, sizeof(PACKET), 0 , (struct sockaddr *) &server_addr, &addr_len) > 0)
 	{
@@ -177,8 +177,8 @@ int main(int argc, char * argv[])
 	sendto(sock, a, sizeof(PACKET), 0, (struct sockaddr *)&server_addr, addr_len);
 
 	close(sock);
-	free(a);
-	free(b);
+	//free(a);
+	//free(b);
 	fclose(fp);
 	
 	/**
