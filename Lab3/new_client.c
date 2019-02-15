@@ -44,7 +44,7 @@ int main(int argc, char * argv[])
 	// Checks to see number of arguments (./client, IP, Port, input file, output file)
 	if (argc != 5)
         {
-                printf ("Usage: %s <ip of server> <port> <input file> <output file> \n",argv[0]);
+                printf ("Usage: %s <port> <ip address> <input file> <output file> \n",argv[0]);
                 return 1;
         }
 
@@ -93,16 +93,16 @@ int main(int argc, char * argv[])
 	printf("Check stuff\n");
 
 	a->header.checksum = 0;
-	memcpy(a->data, argv[4], 10);
+	memcpy(a->data, argv[4], strlen(argv[4]) + 1);
 	a->header.seq_ack = state;
 	a->header.length = strlen(argv[4]) + 1;
 	a->header.checksum = calc_checksum(a, sizeof(HEADER) + a->header.length);
 	sendto (sock, a, sizeof(PACKET), 0, (struct sockaddr *)&server_addr, addr_len);
 	printf("Client do yo stuff, Packet created\n");
-
+		
 	while(bytes_read = recvfrom (sock, a, sizeof(PACKET), 0 , (struct sockaddr *) &server_addr, &addr_len) > 0)
 	{
-		printf("Goes in while loop\n");
+		perror("Goes in while loop\n");
 		if(b->header.seq_ack != state)
 		{
 			if(count <= 3)
@@ -122,17 +122,17 @@ int main(int argc, char * argv[])
 			break;
 		}
 	} 
-	printf("Completes first while loop \n");
+	perror("Completes first while loop \n");
 	
 	while(!feof(fp))
 	{
 		// Create packet
 		int bytes_length = fread(send_data, 1, 10, fp);
 		(a)->header.checksum = 0;
-                int check_sum = calc_checksum(a, sizeof(HEADER) + a->header.length);
 		(a)->header.seq_ack = state;
 		(a)->header.length = bytes_length;
 		memcpy(a->data, send_data ,bytes_length);
+		int check_sum = calc_checksum(a, sizeof(HEADER) + a->header.length);
                 printf("Checksum Value:%d\n",(a)->header.checksum);
 
 		// Add Randomizer
@@ -144,15 +144,16 @@ int main(int argc, char * argv[])
 		sendto(sock, a, sizeof(PACKET), 0, (struct sockaddr *) &server_addr, addr_len);
 			
 		printf("Complete packet creation and sent\n");
-		while(bytes_read = recvfrom (sock, a, sizeof(PACKET), 0, (struct sockaddr *) &server_addr, &addr_len) > 0)
+		while(bytes_read = recvfrom (sock, b, sizeof(PACKET), 0, (struct sockaddr *) &server_addr, &addr_len) > 0)
 		{	
 			if(b->header.seq_ack != state)
                		{
                         	if(count <= 3)
                         	{
                                 	count++;
-					printf(a->data);
+					printf("Data is: %s\n", a->data);
                                 	sendto (sock, a, sizeof(PACKET), 0, (struct sockaddr *)&server_addr, addr_len);
+					printf("Packet sent: \n");
                        		}
                         	else
                        		{
@@ -200,4 +201,3 @@ int main(int argc, char * argv[])
 	*/
 	return 0;
 }
-

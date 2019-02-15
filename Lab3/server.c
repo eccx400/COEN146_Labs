@@ -47,7 +47,7 @@ int main(int argc, char * argv[])
 	}
 	
 	PACKET * a = (PACKET * ) malloc(sizeof(PACKET)) ; //Send
-	PACKET * b; //Response
+	//PACKET * b; //Response
 
 	//Open socket
         if ((sock = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
@@ -75,24 +75,28 @@ int main(int argc, char * argv[])
 	while(1)
 	{
 		//recvfrom(int sockfd, void *buf, size_t len, int flags, struct(sockaddr *) &src_addr, socklen_t *addrlen);
-		bytes_read = recvfrom (sock, a, sizeof(PACKET), 0 , (struct sockaddr *) &client_addr, &addr_len);
-		printf("Packet Data: %s\n", bytes_read);
+		recvfrom (sock, a, sizeof(PACKET), 0 , (struct sockaddr *) &client_addr, &addr_len);
 		perror("Okay");
-		printf("Okay!\n");
 	
+		if(a->header.length == 0)
+		{
+			break;
+		}
+
 		//Checksum
 		int check_sum = (a)->header.checksum;
 		(a)->header.checksum = 0;
+		(a)->header.checksum = calc_checksum(a, sizeof(HEADER) + a->header.length);
 
 		length = (a)->header.length;
 		acknum = (a)->header.seq_ack;
-		memcpy(recv_data, a->data, sizeof(PACKET));
-		printf("Packet Data: %s\n", bytes_read);
 		
-		if(calc_checksum(a, sizeof(HEADER) + a->header.length) != check_sum)
+		printf("The checksum is: %d\n", check_sum);
+		printf("The packet checksum is: %d\n", a->header.checksum);
+		if( a->header.checksum != check_sum)
 		{
-			printf("The checksum failed");	
-			(b)->header.seq_ack = (acknum + 1) % 2; // Checksum failed
+			printf("The checksum failed\n");	
+			(a)->header.seq_ack = (acknum + 1) % 2; // Checksum failed
 			sendto (sock, a, sizeof(PACKET), 0, (struct sockaddr *)&client_addr, addr_len);
 			continue;
 		}
@@ -101,16 +105,17 @@ int main(int argc, char * argv[])
 		if(np == NULL)
 		{
 			np = fopen(a->data, "wb");
-			printf("The output file has been created with input data");		
+			printf("The output file has been created with input data\n");		
 		}
 		else
 		{
-			fwrite(a->data, 1, length, np);
-			printf("Write into the existing output file");
+			fwrite(a->data, sizeof(PACKET), length, np);
+			printf("Write into the existing output file: \n");
 		}
 
-		(b)->header.seq_ack = acknum;
-		sendto (sock, b, sizeof(PACKET), 0, (struct sockaddr *)&client_addr, addr_len);
+		//(b)->header.seq_ack = acknum;
+		sendto (sock, a, sizeof(PACKET), 0, (struct sockaddr *)&client_addr, addr_len);
+		state = (state + 1) % 2;
 	}
 	fclose(np);
 	//free(a);
