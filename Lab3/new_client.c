@@ -32,6 +32,7 @@
 int main(int argc, char * argv[])
 {
 	int sock;
+	int bytes_read;
 	struct sockaddr_in server_addr;
 	struct hostent *host;
 	char send_data[10]; // Send 10 bytes at a time
@@ -82,121 +83,94 @@ int main(int argc, char * argv[])
 	//server_addr.sin_addr = *((struct in_addr *)host->h_addr);
 	inet_pton(AF_INET, argv[2], &server_addr.sin_addr.s_addr);	
 	memset (server_addr.sin_zero, '\0', sizeof (server_addr.sin_zero));
-	
+	addr_len = sizeof(server_addr);	
+
 	sock = socket (PF_INET, SOCK_DGRAM, 0);
 		
-	int ack_num, length, count, lol;
+	int length, count, acknum;
+	length = 10;
+	count = 0;
 	printf("Check shit\n");
-	//
+
+	a->header.checksum = 0;
 	memcpy(a->data, argv[4], 10);
 	a->header.seq_ack = state;
 	a->header.length = strlen(argv[4]) + 1;
-	printf("Client do yo shit\n");
+	a->header.checksum = calc_checksum(a, sizeof(HEADER) + a->header.length);
+	sendto (sock, a, sizeof(PACKET), 0, (struct sockaddr *)&server_addr, addr_len);
+	printf("Client do yo shit, Packet created\n");
 
-	// Does the checksum
-	do
+	while(bytes_read = recvfrom (sock, a, sizeof(PACKET), 0 , (struct sockaddr *) &server_addr, &addr_len) > 0)
 	{
-		count = 0;
-		(a)->header.checksum = 0;
-		(a)->header.checksum = calc_checksum(a, sizeof(HEADER) + a->header.length);
-		printf("Checksum Value:%d\n",(a)->header.checksum);
-		
-		if( count == 3)
+		if(b->header.seq_ack != state)
 		{
-			exit(EXIT_FAILURE);
-		}
-		else
-		{	
-			count++;		
-			
-			// Send to server
-			sendto (sock, a, sizeof(PACKET), 0, (struct sockaddr *)&server_addr, addr_len);
-
-			//Receive from server
-			recvfrom (sock, b, sizeof(PACKET), 0, NULL, NULL);
-			lol = b->header.checksum;
-			b-> header.checksum = 0;
-			b->header.checksum = calc_checksum(b, sizeof(HEADER) + b->header.length);
-			continue;
-		}	
-	}while((b)->header.seq_ack != state && lol != b->header.checksum);
-	printf("Good ACK received");
-	state = (state + 1) % 2;
-
-	while(!feof(fp)) //While there is still data in the input file
-	{
-		// Get the input data from the file (Reads by 10 bytes)
-		length = fread(send_data, sizeof(char), 10, fp);
-		memcpy((*a).data, send_data, sizeof(PACKET));
-
-		// Setup header data for sending packet
-		(a)->header.seq_ack = state;
-		(a)->header.length = length;
-
-		// Does the checksum
-		do
-		{
-			count = 0;
-			(a)->header.checksum = 0;
-			(a)->header.checksum = calc_checksum(a, sizeof(HEADER) + a->header.length);
-			printf("Checksum Value:%d\n",(a)->header.checksum);
-			
-			if( count == 3)
-			{
-				exit(EXIT_FAILURE);
+			if(count <= 3)
+			{	
+				count++;
+				sendto (sock, a, sizeof(PACKET), 0, (struct sockaddr *)&server_addr, addr_len);
 			}
 			else
-			{	
-				count++;		
-				// Send to server
-				sendto (sock, a, sizeof(PACKET), 0, (struct sockaddr *)&server_addr, addr_len);
-
-				//Receive from server
-				recvfrom (sock, b, sizeof(PACKET), 0, NULL, NULL);
-				lol = b->header.checksum;
-				b-> header.checksum = 0;
-				b->header.checksum = calc_checksum(b, sizeof(HEADER) + b->header.length);
-				continue;
-			}	
-		}while((b)->header.seq_ack != state && lol != b->header.checksum);
-
-		//Exit loop if return right ack
-		state = (state + 1) % 2; // Alternate the states between 0 and 1
-	}
-	
-	a->header.seq_ack = state;
-	a->header.length = 0;
-	memset(a->data, 0, 10);
-
-	
-	// Does the checksum
-	do
-	{
-		count = 0;
-		(a)->header.checksum = 0;
-		(a)->header.checksum = calc_checksum(a, sizeof(HEADER) + a->header.length);
-		printf("Checksum Value:%d\n",(a)->header.checksum);
-			
-		if( count == 3)
-		{
-			exit(EXIT_FAILURE);
-			printf("Ran 3 times; exit");
+			{
+				exit(1);
+			}
 		}
 		else
-		{	
-			count++;		
-			// Send to server
-			sendto (sock, a, sizeof(PACKET), 0, (struct sockaddr *)&server_addr, addr_len);
+		{
+			count = 0;
+			state = (state + 1) % 2; // Alternate state between 0 and 1
+			break;
+		}
+	} 
 
-			//Receive from server
-			recvfrom (sock, b, sizeof(PACKET), 0, NULL, NULL);
-			lol = b->header.checksum;
-			b-> header.checksum = 0;
-			b->header.checksum = calc_checksum(b, sizeof(HEADER) + b->header.length);
-			continue;
-		}	
-	}while((b)->header.seq_ack != state && lol != b->header.checksum);
-	
+	while(!feof(fp))
+	{
+		int bytes_length = fread(send_data, 1, 10, fp);
+		(a)->header.checksum = 0;
+                int check_sum = calc_checksum(a, sizeof(HEADER) + a->header.length);
+		(a)->header.seq_ack = state;
+		(a)->header.length = bytes_length;
+		memcpy(a->data, send_data ,bytes_length);
+                printf("Checksum Value:%d\n",(a)->header.checksum);
+
+		// Add Randomizer
+		if(rand() % 100 < 20)
+		{
+			a->header.checksum = 0;
+		}
+		a->header.checksum = check_sum;
+		sendto(sock, a, sizeof(PACKET), 0, (struct sockaddr *) &server_addr, addr_len);
+			
+		while(bytes_read = recvfrom (sock, a, sizeof(PACKET), 0, (struct sockaddr *) &server_addr, &addr_len) > 0)
+		{	
+			if(b->header.seq_ack != state)
+               		{
+                        	if(count <= 3)
+                        	{
+                                	count++;
+					printf(a->data);
+                                	sendto (sock, a, sizeof(PACKET), 0, (struct sockaddr *)&server_addr, addr_len);
+                       		}
+                        	else
+                       		{
+                                	exit(1);
+                        	}
+                	}
+                	else
+                	{
+				count = 0;
+                       		state = (state + 1) % 2; // Alternate state between 0 and 1
+				break;
+                	}
+		}
+	}
+		
+	(a)->header.checksum = 0;
+	(a)->header.checksum = calc_checksum(a, sizeof(HEADER) + a->header.length);
+	(a)->header.seq_ack = state;
+	(a)->header.length = 0;
+	memcpy(a->data, '\0', sizeof(a->data));
+	sendto(sock, a, sizeof(PACKET), 0, (struct sockaddr *)&server_addr, addr_len);
+
 	close(sock);
 	free(a);
 	free(b);
