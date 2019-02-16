@@ -46,7 +46,7 @@ int main(int argc, char * argv[])
 		return 1;
 	}
 	
-	PACKET * a = (PACKET * ) malloc(sizeof(PACKET)) ; //Send
+	PACKET * a =  malloc(sizeof(PACKET)) ; //Send
 	//PACKET * b; //Response
 
 	//Open socket
@@ -78,11 +78,6 @@ int main(int argc, char * argv[])
 		recvfrom (sock, a, sizeof(PACKET), 0 , (struct sockaddr *) &client_addr, &addr_len);
 		perror("Okay");
 	
-		if(a->header.length == 0)
-		{
-			break;
-		}
-
 		//Checksum
 		int check_sum = (a)->header.checksum;
 		(a)->header.checksum = 0;
@@ -93,13 +88,15 @@ int main(int argc, char * argv[])
 		
 		printf("The checksum is: %d\n", check_sum);
 		printf("The packet checksum is: %d\n", a->header.checksum);
-		if( a->header.checksum != check_sum)
+		printf("Pre seq ack %d\n", state);
+		if( a->header.checksum != check_sum || a->header.seq_ack != acknum)
 		{
 			printf("The checksum failed\n");	
 			(a)->header.seq_ack = (acknum + 1) % 2; // Checksum failed
 			sendto (sock, a, sizeof(PACKET), 0, (struct sockaddr *)&client_addr, addr_len);
 			continue;
 		}
+		printf("Post seq ack %d\n", state);
 		
 		// If output file not created, fopen to open it; if created; fwrite to write to it
 		if(np == NULL)
@@ -109,12 +106,17 @@ int main(int argc, char * argv[])
 		}
 		else
 		{
-			fwrite(a->data, sizeof(PACKET), length, np);
+			fwrite(a->data, 1, length, np);
 			printf("Write into the existing output file: \n");
 		}
-
+		printf("The Packet Data is: %s\n", a->data);
+			
 		//(b)->header.seq_ack = acknum;
 		sendto (sock, a, sizeof(PACKET), 0, (struct sockaddr *)&client_addr, addr_len);
+		if(a->header.length == 0)
+		{
+			break;
+		}	
 		state = (state + 1) % 2;
 	}
 	fclose(np);

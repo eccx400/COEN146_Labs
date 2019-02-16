@@ -14,6 +14,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <arpa/inet.h>
+#include <time.h>
 
 /**
  * @author Eric Cheng
@@ -37,6 +38,7 @@ int main(int argc, char * argv[])
 	struct hostent *host;
 	char send_data[10]; // Send 10 bytes at a time
 	socklen_t addr_len;
+	int random;
 	//host= (struct hostent *) gethostbyname((char *)"127.0.0.1");
 	int state = 0; // Start in 0 state
 	
@@ -48,8 +50,8 @@ int main(int argc, char * argv[])
                 return 1;
         }
 
-	PACKET * a = (PACKET * ) malloc(sizeof(PACKET)); //Send
-	PACKET * b = (PACKET * ) malloc(sizeof(PACKET));  //Response 
+	PACKET * a =  malloc(sizeof(PACKET)); //Send
+	PACKET * b =  malloc(sizeof(PACKET));  //Response 
 
 	printf("Pre precheck stuff\n");
 	/**
@@ -100,7 +102,7 @@ int main(int argc, char * argv[])
 	sendto (sock, a, sizeof(PACKET), 0, (struct sockaddr *)&server_addr, addr_len);
 	printf("Client do yo stuff, Packet created\n");
 		
-	while(bytes_read = recvfrom (sock, a, sizeof(PACKET), 0 , (struct sockaddr *) &server_addr, &addr_len) > 0)
+	while(bytes_read = recvfrom (sock, b, sizeof(PACKET), 0 , (struct sockaddr *) &server_addr, &addr_len) > 0)
 	{
 		perror("Goes in while loop\n");
 		if(b->header.seq_ack != state)
@@ -132,33 +134,77 @@ int main(int argc, char * argv[])
 		(a)->header.seq_ack = state;
 		(a)->header.length = bytes_length;
 		memcpy(a->data, send_data ,bytes_length);
-		int check_sum = calc_checksum(a, sizeof(HEADER) + a->header.length);
+		(a)->header.checksum = calc_checksum(a, sizeof(HEADER) + a->header.length);
                 printf("Checksum Value:%d\n",(a)->header.checksum);
-		
-		// Add Randomizer
-		if(rand() % 100 < 20)
+		/**
+		//Add Randomizer
+		random = rand() % 100;	
+		if(random < 20)
 		{
-			a->header.checksum = 0;
+			a->header.checksum = random;
 		}
-		a->header.checksum = check_sum;
+		else
+		{	
+			a->header.checksum = calc_checksum(a, sizeof(HEADER) + a->header.length);
+		}
+		*/
 		sendto(sock, a, sizeof(PACKET), 0, (struct sockaddr *) &server_addr, addr_len);
-			
+					
 		printf("Complete packet creation and sent\n");
-		printf("The Packet Data is: \n", a->data);
+		printf("The Packet Data is: %s\n", a->data);
+	
+		/**
+  		do
+		{
+			// Add Randomizer
+			if(rand() % 100 < 20)
+			{
+				a->header.checksum = 0;
+			}	
+			a->header.checksum = check_sum;
+						
+			printf("Complete packet creation and sent\n");
+			printf("The Packet Data is: \n", a->data);
+	
+			sendto(sock, a, sizeof(PACKET), 0, (struct sockaddr *) &server_addr, addr_len);
+			recvfrom(sock, b, sizeof(PACKET), 0, (struct sockaddr *) &server_addr, &addr_len);
+			
+			if(b->header.seq_ack != state)
+			{
+				printf("Bad ACK \n");
+				exit(1);
+			}
+			
+			if(a->header.length == 0)
+			{
+				count++;
+			}
+		}while(b->header.seq_ack != state || (b->header.seq_ack != state && a->header.length == 0 && count < 3));
+		state = (state + 1) % 2;
+		*/
+
 		while(bytes_read = recvfrom (sock, b, sizeof(PACKET), 0, (struct sockaddr *) &server_addr, &addr_len) > 0)
 		{	
 			if(b->header.seq_ack != state)
                		{
-                        	if((count <= 3) && b->header.length == 0)
+                        	if(count <= 3)
                         	{
+					/*
+					if(random < 20)
+					{
+						a->header.checksum = check_sum;
+					}
+					*/
                                 	count++;
+					printf("Count is %d\n", count);
 					printf("Data is: %s\n", a->data);
                                 	sendto (sock, a, sizeof(PACKET), 0, (struct sockaddr *)&server_addr, addr_len);
-					printf("Packet sent: \n");
+					printf("Packet sent! \n");
                        		}
                         	else
                        		{
-                                	exit(1);
+					perror("This has exited\n");	
+                                	exit(1);		
                         	}
                 	}
                 	else
@@ -172,16 +218,17 @@ int main(int argc, char * argv[])
 	printf("Finishes second loop\n");
 		
 	(a)->header.checksum = 0;
-	(a)->header.checksum = calc_checksum(a, sizeof(HEADER) + a->header.length);
 	(a)->header.seq_ack = state;
 	(a)->header.length = 0;
-	memcpy(a->data, '\0', sizeof(a->data));
+	//memcpy(a->data, '\0', sizeof(a->data));	
+	//(a)->header.checksum = calc_checksum(a, sizeof(HEADER) + a->header.length);
 	sendto(sock, a, sizeof(PACKET), 0, (struct sockaddr *)&server_addr, addr_len);
-
+	printf("Send empty packet uwu\n");
+	
+	fclose(fp);
 	close(sock);
 	//free(a);
 	//free(b);
-	fclose(fp);
 	
 	/**
 	while (1)
