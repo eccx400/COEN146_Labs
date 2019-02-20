@@ -14,6 +14,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <arpa/inet.h>
+#include <fcntl.h>
 
 /**
  * @author Eric Cheng
@@ -86,6 +87,14 @@ int main(int argc, char * argv[])
 	addr_len = sizeof(server_addr);	
 
 	sock = socket (PF_INET, SOCK_DGRAM, 0);
+	
+	//Timer
+	struct timeval tv;
+	int rv; //Return value
+
+	fd_set readfds;
+	fcntl(sock, F_SETFL, O_NONBLOCK);
+	printf("Timer variables set up\n");
 		
 	int length, count, acknum;
 	length = 10;
@@ -135,6 +144,14 @@ int main(int argc, char * argv[])
 		int check_sum = calc_checksum(a, sizeof(HEADER) + a->header.length);
                 printf("Checksum Value:%d\n",(a)->header.checksum);
 		
+		//Start before calling select
+		FD_ZERO(&readfds);
+		FD_SET(sock, &readfds);
+
+		//Set the Timer
+		tv.tv_sec = 1;
+		tv.tv_usec = 0;	
+
 		// Add Randomizer
 		if(rand() % 100 < 20)
 		{
