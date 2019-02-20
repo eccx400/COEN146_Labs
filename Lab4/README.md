@@ -25,6 +25,7 @@ checksum or just zero. This will fake the error and loss effect.
 SELECT
 This is an example on how to use select (check the man page for includes):
 
+```
 // local variables needed
 struct timeval tv; // timer
 int rv; // select returned value
@@ -53,3 +54,4 @@ else if (rv == 1)
 {
   // there is data to be received
 }
+```
