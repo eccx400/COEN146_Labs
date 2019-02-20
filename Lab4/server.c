@@ -77,12 +77,19 @@ int main(int argc, char * argv[])
 		//recvfrom(int sockfd, void *buf, size_t len, int flags, struct(sockaddr *) &src_addr, socklen_t *addrlen);
 		recvfrom (sock, a, sizeof(PACKET), 0 , (struct sockaddr *) &client_addr, &addr_len);
 		perror("Okay");
-	
+		
 		if(a->header.length == 0)
 		{
 			break;
 		}
-
+		
+		//Generates eroor	
+		if(rand() % 100  == 1)
+		{
+			printf("Skips an ACK to fake error and loss effect\n");
+			continue;
+		}
+		
 		//Checksum
 		int check_sum = (a)->header.checksum;
 		(a)->header.checksum = 0;

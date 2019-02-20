@@ -159,7 +159,20 @@ int main(int argc, char * argv[])
 		}
 		a->header.checksum = check_sum;
 		sendto(sock, a, sizeof(PACKET), 0, (struct sockaddr *) &server_addr, addr_len);
-			
+		
+		rv = select( sock + 1, &readfds, NULL, NULL, &tv); // sock is the socket you are using
+
+		if(rv == 0)
+		{
+			//Timeout, no data
+			printf("Timed out, data will be resent\n");
+			continue;
+		}
+		else if(rv == 1)
+		{
+			// There is data to be received
+		}
+	
 		printf("Complete packet creation and sent\n");
 		printf("The Packet Data is: \n", a->data);
 		while(bytes_read = recvfrom (sock, b, sizeof(PACKET), 0, (struct sockaddr *) &server_addr, &addr_len) > 0)
