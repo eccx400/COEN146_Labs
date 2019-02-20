@@ -1,6 +1,6 @@
-#This is the README.md for Lab 2 of the COEN 146 Computer Networks course
+# This is the README.md for Lab 2 of the COEN 146 Computer Networks course
 
-n this course, we will write several programs for transferring files in different situations, by changing the protocol underneath and the network conditions.
+In this course, we will write several programs for transferring files in different situations, by changing the protocol underneath and the network conditions.
 
 This is FTv1, File Transfer - version 1. It consists of a client and a server that communicate to transfer one file from the client to the server using TCP.
 
