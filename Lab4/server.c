@@ -83,7 +83,6 @@ int main(int argc, char * argv[])
 			break;
 		}
 	
-		/**	
 		//Generates error
 		random = rand() % 100 + 1;	
 		if(random < 10)
@@ -91,7 +90,6 @@ int main(int argc, char * argv[])
 			printf("Skips an ACK to fake error and loss effect\n");
 			continue;
 		}
-		*/
 		
 		//Checksum
 		int check_sum = (a)->header.checksum;
@@ -119,7 +117,7 @@ int main(int argc, char * argv[])
 		}
 		else
 		{
-			fwrite(a->data, sizeof(PACKET), length, np);
+			fwrite(a->data, 1 , length, np);
 			printf("Write into the existing output file: \n");
 		}
 
