@@ -16,7 +16,7 @@
 
 /**
  * @author: Eric Cheng
- * @date: 4 February, 2019
+ * @date: 17 February, 2019
  *
  * This project consists of building an S&W (Stop and Wait) reliable protocol. TFv2 is going to be built on top
  * of UDP, and it is supposed to provide a reliable transport service to TFv1 (developed in week 3, which needs
@@ -71,7 +71,7 @@ int main(int argc, char * argv[])
 	printf("UDP server waiting for packages\n");
 	
 	FILE * np = NULL;
-	int length, acknum, j;
+	int length, acknum, random;
 	while(1)
 	{
 		//recvfrom(int sockfd, void *buf, size_t len, int flags, struct(sockaddr *) &src_addr, socklen_t *addrlen);
@@ -82,13 +82,16 @@ int main(int argc, char * argv[])
 		{
 			break;
 		}
-		
-		//Generates eroor	
-		if(rand() % 100  == 1)
+	
+		/**	
+		//Generates error
+		random = rand() % 100 + 1;	
+		if(random < 10)
 		{
 			printf("Skips an ACK to fake error and loss effect\n");
 			continue;
 		}
+		*/
 		
 		//Checksum
 		int check_sum = (a)->header.checksum;

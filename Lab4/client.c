@@ -18,7 +18,7 @@
 
 /**
  * @author Eric Cheng
- * @date 4 February, 2019
+ * @date 17 February, 2019
  *
  * This project consists of building an S&W (Stop and Wait) reliable protocol. TFv2 is going to be built on top
  * of UDP, and it is supposed to provide a reliable transport service to TFv1 (developed in week 3, which needs
@@ -109,26 +109,55 @@ int main(int argc, char * argv[])
 	sendto (sock, a, sizeof(PACKET), 0, (struct sockaddr *)&server_addr, addr_len);
 	printf("Client do yo stuff, Packet created\n");
 		
-	while(bytes_read = recvfrom (sock, a, sizeof(PACKET), 0 , (struct sockaddr *) &server_addr, &addr_len) > 0)
+	while(1)
 	{
+		//Start before calling select
+		FD_ZERO(&readfds);
+		FD_SET(sock, &readfds);
+
+		//Set the Timer
+		tv.tv_sec = 1;
+		tv.tv_usec = 0;	
+		printf("Timer has been set up\n");
+
+		//call select
+		rv = select(sock + 1, &readfds, NULL, NULL, &tv);
+
 		perror("Goes in while loop\n");
-		if(b->header.seq_ack != state)
+		if(rv == 1)
 		{
-			if(count <= 3)
-			{	
-				count++;
-				sendto (sock, a, sizeof(PACKET), 0, (struct sockaddr *)&server_addr, addr_len);
+			recvfrom (sock, b, sizeof(PACKET), 0, (struct sockaddr *) &server_addr, &addr_len);
+			perror("Data has been received\n");
+			if(b->header.seq_ack != state) // Lab 3 Retransmission
+			{
+				if(count <= 3)
+				{
+					// Increment count and resend package	
+					count++;
+					sendto (sock, a, sizeof(PACKET), 0, (struct sockaddr *)&server_addr, addr_len);
+				}
+				else
+				{
+					perror("Greater than 3 times, exit\n");
+					exit(1);
+				}
 			}
 			else
 			{
-				exit(1);
+				count = 0;
+				state = (state + 1) % 2; // Alternate state between 0 and 1
+				break;
 			}
 		}
-		else
+		else //rv == 0
 		{
-			count = 0;
-			state = (state + 1) % 2; // Alternate state between 0 and 1
-			break;
+			perror("Resend packet\n");
+			count++;
+			sendto (sock, a, sizeof(PACKET), 0, (struct sockaddr *)&server_addr, addr_len);
+			if(count >= 3)
+			{
+				exit(1);
+			}
 		}
 	} 
 	perror("Completes first while loop \n");
@@ -142,61 +171,69 @@ int main(int argc, char * argv[])
 		(a)->header.length = bytes_length;
 		memcpy(a->data, send_data ,bytes_length);
 		int check_sum = calc_checksum(a, sizeof(HEADER) + a->header.length);
-                printf("Checksum Value:%d\n",(a)->header.checksum);
-		
-		//Start before calling select
-		FD_ZERO(&readfds);
-		FD_SET(sock, &readfds);
+                printf("Checksum Value:%d\n",(a)->header.checksum);	
 
-		//Set the Timer
-		tv.tv_sec = 1;
-		tv.tv_usec = 0;	
-
+		/**
 		// Add Randomizer
 		if(rand() % 100 < 20)
 		{
 			a->header.checksum = 0;
 		}
+		*/
 		a->header.checksum = check_sum;
 		sendto(sock, a, sizeof(PACKET), 0, (struct sockaddr *) &server_addr, addr_len);
-		
-		rv = select( sock + 1, &readfds, NULL, NULL, &tv); // sock is the socket you are using
-
-		if(rv == 0)
-		{
-			//Timeout, no data
-			printf("Timed out, data will be resent\n");
-			continue;
-		}
-		else if(rv == 1)
-		{
-			// There is data to be received
-		}
 	
 		printf("Complete packet creation and sent\n");
 		printf("The Packet Data is: \n", a->data);
-		while(bytes_read = recvfrom (sock, b, sizeof(PACKET), 0, (struct sockaddr *) &server_addr, &addr_len) > 0)
+		while(1)
 		{	
-			if(b->header.seq_ack != state)
-               		{
-                        	if((count <= 3) && b->header.length == 0)
-                        	{
-                                	count++;
-					printf("Data is: %s\n", a->data);
-                                	sendto (sock, a, sizeof(PACKET), 0, (struct sockaddr *)&server_addr, addr_len);
-					printf("Packet sent: \n");
-                       		}
-                        	else
-                       		{
-                                	exit(1);
-                        	}
-                	}
-                	else
-                	{
-				count = 0;
-                       		state = (state + 1) % 2; // Alternate state between 0 and 1
-				break;
-                	}
+			//Start before calling select
+			FD_ZERO(&readfds);
+			FD_SET(sock, &readfds);
+
+			//Set the Timer
+			tv.tv_sec = 1;
+			tv.tv_usec = 0;	
+			printf("Transmission timer has been set up\n");
+
+			//call select
+			rv = select(sock + 1, &readfds, NULL, NULL, &tv);
+
+			perror("Goes in second while loop\n");
+			if(rv == 1)
+			{
+				recvfrom (sock, b, sizeof(PACKET), 0, (struct sockaddr *) &server_addr, &addr_len);
+				if(b->header.seq_ack != state) //Lab 3 Retransmission
+				{
+					if(count <= 3)
+					{	
+						count++;
+						sendto (sock, a, sizeof(PACKET), 0, (struct sockaddr *)&server_addr, addr_len);
+					}
+					else
+					{
+						perror("Exit after 3 counts\n");
+						exit(1);
+					}
+				}
+				else
+				{
+					count = 0;
+					state = (state + 1) % 2; // Alternate state between 0 and 1
+					break;
+				}
+			}
+			else //rv == 0
+			{
+				printf("Timed out, packet will be resent\n");
+				count++;
+				printf("Count: %d\n", count);
+				sendto (sock, a, sizeof(PACKET), 0, (struct sockaddr *)&server_addr, addr_len);
+				if(count >= 3)
+				{
+					exit(1);
+				}
+			}
 		}
 	}
 	printf("Finishes second loop\n");
