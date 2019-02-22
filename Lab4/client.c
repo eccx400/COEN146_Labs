@@ -20,11 +20,18 @@
  * @author Eric Cheng
  * @date 17 February, 2019
  *
- * This project consists of building an S&W (Stop and Wait) reliable protocol. TFv2 is going to be built on top
- * of UDP, and it is supposed to provide a reliable transport service to TFv1 (developed in week 3, which needs
- * to change to call your new send and receive functions and use buffers of same size). Messages are sent one
- * at a time, and each message needs to be acknowledged when received, before a new message can be sent.
- * TFv2 implements basically the protocol rdt2.2 presented in the text book.
+ * This project builds on top of the Lab 3 TFv2 to enable it to deal with loss of messages.
+ * TFv3 implements basically the protocol rdt3.0 presented in the textbook. It consists of 
+ * a client and server. Communication is unidirectional, i.e. data flows from the client 
+ * to server. The server starts and waits for a message, and the client starts the communication.
+ * Messages have sequence or ack number 0 or 1 (start with 0). Before sending each message
+ * a checksum is calculated and added to the header. After sending each message the client
+ * starts a timer. Use select for that. If select returns 0 there is no data; if it returns
+ * 1, there is data so the client calls recvfrom to receive ACK and processes it. If ACK
+ * is not corrupted and the ack number is right, the client can now send one more message.
+ *
+ * The server then checks the checksum and then sends an ACK if seq # and checksum is correct.
+ * It can then write the data to the output file.
  */
 
 /********************
@@ -109,6 +116,7 @@ int main(int argc, char * argv[])
 	sendto (sock, a, sizeof(PACKET), 0, (struct sockaddr *)&server_addr, addr_len);
 	printf("Client do yo stuff, Packet created\n");
 		
+	//This loops transmits the name of the packet
 	while(1)
 	{
 		//Start before calling select
@@ -117,17 +125,6 @@ int main(int argc, char * argv[])
 
 		//Set the Timer
 		tv.tv_sec = 1;
-		tv.tv_usec = 0;	
-		printf("Timer has been set up\n");
-
-		//call select
-		rv = select(sock + 1, &readfds, NULL, NULL, &tv);
-
-		perror("Goes in while loop\n");
-		if(rv == 1)
-		{
-			recvfrom (sock, b, sizeof(PACKET), 0, (struct sockaddr *) &server_addr, &addr_len);
-			perror("Data has been received\n");
 			if(b->header.seq_ack != state) // Lab 3 Retransmission
 			{
 				if(count <= 3)
@@ -173,13 +170,11 @@ int main(int argc, char * argv[])
 		int check_sum = calc_checksum(a, sizeof(HEADER) + a->header.length);
                 printf("Checksum Value:%d\n",(a)->header.checksum);	
 
-		/**
 		// Add Randomizer
 		if(rand() % 100 < 20)
 		{
 			a->header.checksum = 0;
 		}
-		*/
 		a->header.checksum = check_sum;
 		sendto(sock, a, sizeof(PACKET), 0, (struct sockaddr *) &server_addr, addr_len);
 	
@@ -269,3 +264,15 @@ int main(int argc, char * argv[])
 	*/
 	return 0;
 }
+/**************************
+	UDP socket example, client
+	Winter 2019
+ **************************/
+
+#include "tfv2.h"
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <netinet/in.h>
+#include <netdb.h>
+#include <stdio.h>
+#include <string.h>
