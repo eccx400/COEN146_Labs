@@ -125,6 +125,14 @@ int main(int argc, char * argv[])
 
 		//Set the Timer
 		tv.tv_sec = 1;
+		tv.tv_usec = 0;	
+		printf("Timer has been set up\n");
+
+		//call select
+		rv = select(sock + 1, &readfds, NULL, NULL, &tv);
+		perror("Goes in second while loop \n");
+		if(rv == 1)
+		{
 			if(b->header.seq_ack != state) // Lab 3 Retransmission
 			{
 				if(count <= 3)
@@ -264,15 +272,3 @@ int main(int argc, char * argv[])
 	*/
 	return 0;
 }
-/**************************
-	UDP socket example, client
-	Winter 2019
- **************************/
-
-#include "tfv2.h"
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <netinet/in.h>
-#include <netdb.h>
-#include <stdio.h>
-#include <string.h>
