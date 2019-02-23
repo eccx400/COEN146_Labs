@@ -130,9 +130,11 @@ int main(int argc, char * argv[])
 
 		//call select
 		rv = select(sock + 1, &readfds, NULL, NULL, &tv);
-		perror("Goes in second while loop \n");
+
+		perror("Goes in second while loop\n");
 		if(rv == 1)
 		{
+			recvfrom (sock, b, sizeof(PACKET), 0, (struct sockaddr *) &server_addr, &addr_len);
 			if(b->header.seq_ack != state) // Lab 3 Retransmission
 			{
 				if(count <= 3)
