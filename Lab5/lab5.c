@@ -67,6 +67,8 @@ typedef struct
  */
 int n = 4; // Size of row and column of matrix
 int matrix[n][n];
+int sock;
+pthread my_mutex lock;
 Machine linux_machines[n]; // For host tables
 
 /**
@@ -129,17 +131,21 @@ int main(int argc, char * argv[])
 	return 0;
 }
 
+// Receives cost update from other machines
 void * receiveInfo()
 {
 
 }
 
+// Runs link state algorithm
 void * linkState()
 {
 
 }
 
+// Prints the table
 void printTable()
 {
-
+	pthread_lock(&my_mutex); // do stuff with cost matrix
+	pthread_unlock(&my_mutex); // My mutex should be global and shared throughout the program
 }
