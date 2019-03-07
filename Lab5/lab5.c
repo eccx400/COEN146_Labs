@@ -68,7 +68,9 @@ typedef struct
 int n = 4; // Size of row and column of matrix
 int matrix[n][n];
 int sock;
-pthread my_mutex lock;
+int id;
+int port;
+pthread my_mutex lock; // Global mutex
 Machine linux_machines[n]; // For host tables
 
 /**
@@ -77,14 +79,15 @@ Machine linux_machines[n]; // For host tables
 void * linkState(void *);
 void * receiveInfo(void *);
 
+void parseFiles(FILE * fp, FILE * np);
 void printTable(void);
 
-
+// The main function to take in keyboard input and use UDP
 int main(int argc, char * argv[])
 {
 	if (argc != 5)
         {
-                printf ("Usage: %s <port> <ip address> <input file> <output file> \n",argv[0]);
+                printf ("Usage: %s <id> <nmachines> <cost_file> <host_ files> \n",argv[0]);
                 return 1;
         }
 
@@ -95,12 +98,14 @@ int main(int argc, char * argv[])
 	}
 	printf("Input file created\n"); 
 
-	FILE * np = fopen(argv[4], "2b");
+	FILE * np = fopen(argv[4], "wb");
 	if(!np)
 	{
 		printf("File cannot be opened");
 	}
 	printf("Output file created\n"); 
+
+	pthread_mutex_init(&lock, NULL);
 
 	struct sockaddr_in server_addr , client_addr;
 	struct sockaddr_storage udp_storage;
@@ -131,16 +136,83 @@ int main(int argc, char * argv[])
 	return 0;
 }
 
+void minDist(int dist, bool sptSet[])
+{
+	int min = 9999, min_Index;
+	int i;
+	for(i = 0; i < n; i++)	
+	{
+		if(sptSet[i] == false && dist[i] <= min)
+		{
+			min = dist[i];
+			min_Index = i;
+		}
+	}
+	return min_Index;
+}
+
+void linkState(int cost[][], int router)
+{
+	int dist[n];
+	bool sptSet;
+
+	int i;
+	for(i = 0; i < n; i++)
+	{
+		dist[i] = INT_MAX;
+		sptSet[i] = false;
+	}
+
+	dist[router] = 0;
+
+	int count;
+	for( count = 0; count < n - 1; count++)
+	{
+		int a = minDist(dist, sptSet);
+		sptSet[a] = true;
+		
+		int v;
+		for(v = 0; v < n; v++)
+		{
+			if(!sptSet[v] && graph[a][v] && dist[a] != INT_MAX && dist[a] + cost[a][v] < dist[v])
+			{
+				dist[v] = dist[a] + cost[a][v];
+			}	
+		}
+	}
+	int x;
+	for(x = 0; x < n; x++)
+	{
+		printf("%d ", dist[x]);
+	}
+}
+
+// Parses the files using the fscanf() function
+void parseFiles(FILE * input, FILE * output)
+{
+	for(int i = 0; i < n; i++)
+	{
+		if((fscanf(f_hosts, "%s %s %d", &(hosts[i].name), &(hosts[i].ip), (hosts[i].port))) < 1)
+		{
+			break;
+		}
+		print
+	}
+}
+
 // Receives cost update from other machines
 void * receiveInfo()
 {
-
+	while(1)
+	{
+		receive_data(port);
+	}
 }
 
-// Runs link state algorithm
+// Runs link state algorithm; Use dijkstras algorithm to find shortest path
 void * linkState()
 {
-
+	int val;
 }
 
 // Prints the table
