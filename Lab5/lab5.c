@@ -68,8 +68,9 @@ typedef struct
 int n = 4; // Size of row and column of matrix
 int matrix[n][n];
 int sock;
-int id;
-int port;
+int _id;
+int _port;
+int recvData[3] = {0};
 pthread my_mutex lock; // Global mutex
 Machine linux_machines[n]; // For host tables
 
@@ -90,6 +91,8 @@ int main(int argc, char * argv[])
                 printf ("Usage: %s <id> <nmachines> <cost_file> <host_ files> \n",argv[0]);
                 return 1;
         }
+	_id = atoi(argv[1]);
+	_port = linux_machines[_id].port;
 
 	FILE * fp = fopen(argv[3], "rb");
 	if(!fp)
@@ -104,7 +107,9 @@ int main(int argc, char * argv[])
 		printf("File cannot be opened");
 	}
 	printf("Output file created\n"); 
+	parseFiles(fp, np);
 
+	pthread_t thread1,thread2;
 	pthread_mutex_init(&lock, NULL);
 
 	struct sockaddr_in server_addr , client_addr;
@@ -132,6 +137,10 @@ int main(int argc, char * argv[])
         	perror("Bind");
         	exit(1);
     	}
+
+	//Threads
+	pthread_create(&thread1, NULL, receiveInfo, NULL);
+	pthread_create(&thread2, NULL, linkState, NULL);
 
 	return 0;
 }
@@ -197,7 +206,7 @@ void parseFiles(FILE * input, FILE * output)
 		int j;
 		for(j = 0; j < n; j++)
 		{
-			if(parse = (fscanf(input, "%d", &costs[i][j])) != 1)
+			if(parse = (fscanf(input, "%d", &matrix[i][j])) != 1)
 			{	
 				break;
 			}
@@ -209,11 +218,11 @@ void parseFiles(FILE * input, FILE * output)
 	// Parsing for output file
 	for(int i = 0; i < n; i++)
 	{
-		if(parse = (fscanf(output , "%s %s %d", &(hosts[i].name), &(hosts[i].ip), (hosts[i].port))) < 1)
+		if(parse = (fscanf(output , "%s %s %d", &(linux_machines[i].name), &(linux_machines[i].ip), (linux_machines[i].port))) < 1)
 		{
 			break;
 		}
-		printf("%s %s %d", (hosts[i].name), (hosts[i].ip), (hosts[i].port));
+		printf("%s %s %d", (linux_machines[i].name), (linux_machines[i].ip), (linux_machines[i].port));
 	}
 	perror("Output file parsed\n");
 	return;
@@ -224,14 +233,36 @@ void * receiveInfo()
 {
 	while(1)
 	{
-		receive_data(port);
+		int nBytes = recvfrom (sock, &recvData, sizeof(recvData), 0, NULL, NULL);
+		perror("Got information\n");
+		printf("Data Received: %d\n", nBytes);
+
+		int data1 = ntohl(recvData[0]);
+		int data2 = ntohl(recvData[1]);
+
+		pthread_mutex_lock(&lock);
+		matrix[data1][data2] = ntohl(recvData[2]);
+		matrix[data2][data1] = ntohl(recvData[2]);
+
+		int i;
+		for(i = 0; i < n; i++)
+		{
+			int j;
+			for(j = 0; j < n; j++)
+			{
+				print("%d", matrix[i][j];
+			}
+			printf("\n");
+		}
+		pthread_mutex_unlock(&lock);
 	}
+	return NULL;
 }
 
 // Runs link state algorithm; Use dijkstras algorithm to find shortest path
 void * linkState()
 {
-	int val;
+	int delay;
 }
 
 // Prints the table
