@@ -58,7 +58,7 @@
 typedef struct
 {
 	char name[50];
-	char ip[50]
+	char ip[50];
 	int port;
 }MACHINE;
 
@@ -66,29 +66,32 @@ typedef struct
  * Global Variables
  */
 int n = 4; // Size of row and column of matrix
-int matrix[n][n];
+int matrix[4][4];
 int sock;
 int _id;
 int _port;
 int recvData[3] = {0};
-pthread my_mutex lock; // Global mutex
-Machine linux_machines[n]; // For host tables
+pthread_mutex_t lock; // Global mutex
+MACHINE linux_machines[4]; // For host tables
 
 /**
  * Thread functions
  */
-void * linkState(void *);
-void * receiveInfo(void *);
+void * linkState();
+void * receiveInfo();
 
+int minDist(int dist[], int sptSet[]);
+void link_State(int cost[n][n], int router);
 void parseFiles(FILE * fp, FILE * np);
 void printTable(void);
 
 // The main function to take in keyboard input and use UDP
 int main(int argc, char * argv[])
 {
+	perror("Everything has been initialized correctly\n");
 	if (argc != 5)
         {
-                printf ("Usage: %s <id> <nmachines> <cost_file> <host_ files> \n",argv[0]);
+                printf ("Usage: %s <id> <nmachines> <cost_file> <host_files> \n",argv[0]);
                 return 1;
         }
 	_id = atoi(argv[1]);
@@ -145,13 +148,13 @@ int main(int argc, char * argv[])
 	return 0;
 }
 
-void minDist(int dist, bool sptSet[])
+int minDist(int dist[], int sptSet[])
 {
 	int min = 9999, min_Index;
 	int i;
 	for(i = 0; i < n; i++)	
 	{
-		if(sptSet[i] == false && dist[i] <= min)
+		if(sptSet[i] == 0 && dist[i] <= min)
 		{
 			min = dist[i];
 			min_Index = i;
@@ -160,16 +163,16 @@ void minDist(int dist, bool sptSet[])
 	return min_Index;
 }
 
-void linkState(int cost[][], int router)
+void link_State(int cost[n][n], int router)
 {
 	int dist[n];
-	bool sptSet;
+	int sptSet[n];
 
 	int i;
 	for(i = 0; i < n; i++)
 	{
 		dist[i] = INT_MAX;
-		sptSet[i] = false;
+		sptSet[i] = 0;
 	}
 
 	dist[router] = 0;
@@ -178,17 +181,18 @@ void linkState(int cost[][], int router)
 	for( count = 0; count < n - 1; count++)
 	{
 		int a = minDist(dist, sptSet);
-		sptSet[a] = true;
+		sptSet[a] = 1;
 		
 		int v;
 		for(v = 0; v < n; v++)
 		{
-			if(!sptSet[v] && graph[a][v] && dist[a] != INT_MAX && dist[a] + cost[a][v] < dist[v])
+			if(!sptSet[v] && cost[a][v] && dist[a] != INT_MAX && dist[a] + cost[a][v] < dist[v])
 			{
 				dist[v] = dist[a] + cost[a][v];
 			}	
 		}
 	}
+
 	int x;
 	for(x = 0; x < n; x++)
 	{
@@ -216,7 +220,8 @@ void parseFiles(FILE * input, FILE * output)
 	perror("Input file parsed\n");
 
 	// Parsing for output file
-	for(int i = 0; i < n; i++)
+	int x;
+	for(x = 0; x < n; x++)
 	{
 		if(parse = (fscanf(output , "%s %s %d", &(linux_machines[i].name), &(linux_machines[i].ip), (linux_machines[i].port))) < 1)
 		{
@@ -240,21 +245,10 @@ void * receiveInfo()
 		int data1 = ntohl(recvData[0]);
 		int data2 = ntohl(recvData[1]);
 
-		pthread_mutex_lock(&lock);
 		matrix[data1][data2] = ntohl(recvData[2]);
 		matrix[data2][data1] = ntohl(recvData[2]);
 
-		int i;
-		for(i = 0; i < n; i++)
-		{
-			int j;
-			for(j = 0; j < n; j++)
-			{
-				print("%d", matrix[i][j];
-			}
-			printf("\n");
-		}
-		pthread_mutex_unlock(&lock);
+		printTable();
 	}
 	return NULL;
 }
@@ -268,6 +262,19 @@ void * linkState()
 // Prints the table
 void printTable()
 {
-	pthread_lock(&my_mutex); // do stuff with cost matrix
-	pthread_unlock(&my_mutex); // My mutex should be global and shared throughout the program
+	//pthread_lock(&my_mutex); // do stuff with cost matrix
+	//pthread_unlock(&my_mutex); // My mutex should be global and shared throughout the program
+	
+	pthread_mutex_lock(&lock);
+	int i;
+	for(i = 0; i < n; i++)
+	{
+		int j;
+		for(j = 0; j < n; j++)
+		{
+			printf("%d", matrix[i][j]);
+		}
+		printf("\n");
+	}
+	pthread_mutex_unlock(&lock);
 }
