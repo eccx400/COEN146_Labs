@@ -190,14 +190,33 @@ void linkState(int cost[][], int router)
 // Parses the files using the fscanf() function
 void parseFiles(FILE * input, FILE * output)
 {
+	int i;
+	int parse;
+	for (i = 0; i < n; i++)
+	{	
+		int j;
+		for(j = 0; j < n; j++)
+		{
+			if(parse = (fscanf(input, "%d", &costs[i][j])) != 1)
+			{	
+				break;
+			}
+		}
+		printf("\n");
+	}
+	perror("Input file parsed\n");
+
+	// Parsing for output file
 	for(int i = 0; i < n; i++)
 	{
-		if((fscanf(f_hosts, "%s %s %d", &(hosts[i].name), &(hosts[i].ip), (hosts[i].port))) < 1)
+		if(parse = (fscanf(output , "%s %s %d", &(hosts[i].name), &(hosts[i].ip), (hosts[i].port))) < 1)
 		{
 			break;
 		}
-		print
+		printf("%s %s %d", (hosts[i].name), (hosts[i].ip), (hosts[i].port));
 	}
+	perror("Output file parsed\n");
+	return;
 }
 
 // Receives cost update from other machines
