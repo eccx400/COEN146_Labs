@@ -71,6 +71,7 @@ int sock;
 int _id;
 int _port;
 int recvData[3] = {0};
+int sendData[3] = {0};
 pthread_mutex_t lock; // Global mutex
 MACHINE linux_machines[4]; // For host tables
 
@@ -78,6 +79,7 @@ MACHINE linux_machines[4]; // For host tables
  * Thread functions
  */
 void * linkState();
+void * sendInfo();
 void * receiveInfo();
 
 int minDist(int dist[], int sptSet[]);
@@ -115,7 +117,7 @@ int main(int argc, char * argv[])
 	pthread_t thread1,thread2;
 	pthread_mutex_init(&lock, NULL);
 
-	struct sockaddr_in server_addr , client_addr;
+	struct sockaddr_in server_addr;
 	struct sockaddr_storage udp_storage;
 	socklen_t addr_len, caddr_len;
 
@@ -205,6 +207,8 @@ void parseFiles(FILE * input, FILE * output)
 {
 	int i;
 	int parse;
+
+	//Parsing for input file
 	for (i = 0; i < n; i++)
 	{	
 		int j;
@@ -231,6 +235,40 @@ void parseFiles(FILE * input, FILE * output)
 	}
 	perror("Output file parsed\n");
 	return;
+}
+
+// Sends Cost update
+void * sendInfo()
+{
+	struct sockaddr_in destination_addr;
+	socklen_t addr_len;
+
+	int i;
+	for(i = 0; i < n; i++)
+	{
+		destination_addr.sin_family = AF_INET;
+		destination_addr.sin_port = htons(linux_machines[i].port);
+		inet_pton(AF_INET, linux_machines[i].ip, &destination_addr.sin_addr.s_addr);
+		memset(destination_addr.sin_zero, '\0', sizeof (destination_addr.sin_zero));	
+		addr_len = sizeof(destination_addr);
+	}
+
+	// open socket
+	if ((sock = socket(AF_INET, SOCK_DGRAM, 0)) == -1)
+	{
+		perror("socket");
+		exit(1);
+	}
+
+	int j;
+	for(j = 0; j < n; j++)
+	{
+		if(j != _id)
+		{
+			sendto(sock, &sendData, sizeof(sendData), 0, (struct sockaddr *) &destination_addr, addr_len);
+		}
+	}
+	perror("The package has been sent");
 }
 
 // Receives cost update from other machines
