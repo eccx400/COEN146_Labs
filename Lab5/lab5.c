@@ -119,12 +119,12 @@ int main(int argc, char * argv[])
 	//Parsing for input and output files
 	for (i = 0; i < n; i++)
 	{
-		fscanf(np , "%s %s %d", &(linux_machines[i].name), &(linux_machines[i].ip), (linux_machines[i].port));
+		fscanf(np , "%s %s %d", (linux_machines[i].name), (linux_machines[i].ip), &(linux_machines[i].port));
 		//printf("%s %s %d", (linux_machines[i].name), (linux_machines[i].ip), (linux_machines[i].port));	
 		for(j = 0; j < n; j++)
 		{
 			fscanf(fp, "%d", &matrix[i][j]);
-			printf("The output is: %d\n", &matrix[i][j]);
+			//printf("The output is: %d\n", &matrix[i][j]);
 		}
 		printf("\n");
 	}
@@ -165,14 +165,15 @@ int main(int argc, char * argv[])
 
 	perror("Thread creation preconditions checked\n");
 
-	while(1)
+	int count = 0;
+	while( count < 3)
 	{
 		sleep(10);
 		
 		int ncost, neighbor;
 		struct sockaddr_in destination_addr;
 
-		printf("Input updates\n");
+		printf("Input updates using <neighbor> <ncost>:\n", _id);
 		scanf("%d %d", &neighbor, &ncost);
 		
 		pthread_mutex_lock(&lock);
@@ -211,7 +212,9 @@ int main(int argc, char * argv[])
 				}
 			}
 		}
+		count++;
 	}	
+	sleep(30);
 	fclose(fp);
 	fclose(np);
 	return 0;
@@ -232,7 +235,6 @@ int minDist(int dist[], int sptSet[])
 	}
 	return min_Index;
 }
-
 
 // Does Dijkstra's algorithm
 void link_State(int cost[n][n], int router)
@@ -277,7 +279,7 @@ void * receiveInfo()
 {
 	while(1)
 	{
-		int nBytes = recvfrom (sock, &recvData, sizeof(recvData), 0, NULL, NULL);
+		int nBytes = recvfrom (sock, recvData, sizeof(recvData), 0, NULL, NULL);
 		perror("Got information\n");
 		printf("Data Received: %d\n", nBytes);
 
@@ -288,8 +290,6 @@ void * receiveInfo()
 		matrix[data1][data2] = ntohl(recvData[2]);
 		matrix[data2][data1] = ntohl(recvData[2]);
 		pthread_mutex_unlock(&lock);
-	
-		printTable();
 	}
 	return NULL;
 }
@@ -301,19 +301,20 @@ void * linkState()
 	while(1)
 	{
 		delay = (rand() % 10) + 10;
-		printf("Generated random number between 10 and 20\n");
+		printf("Sleeptime is: %d\n", delay);
 		sleep(delay);
 
-		printTable();
+		//printTable();
 		
 		pthread_mutex_lock(&lock);
-		int u;
-		for(u = 0; u < n; u++)
+		int srcnode;
+		for(srcnode = 0; srcnode < n; ++srcnode)
 		{
-			printf("Node %d\n", u);
-			link_State(matrix, u);
+			printf("Node %d\n", srcnode);
+			link_State(matrix, srcnode);
 		}
 		pthread_mutex_unlock(&lock);
+		printf("\n");
 	}
 	return NULL;
 }
