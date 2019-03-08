@@ -84,7 +84,6 @@ void * receiveInfo();
 
 int minDist(int dist[], int sptSet[]);
 void link_State(int cost[n][n], int router);
-void parseFiles(FILE * fp, FILE * np);
 void printTable(void);
 
 // The main function to take in keyboard input and use UDP
@@ -106,16 +105,33 @@ int main(int argc, char * argv[])
 	}
 	printf("Input file created\n"); 
 
-	FILE * np = fopen(argv[4], "wb");
+	FILE * np = fopen(argv[4], "rb");
 	if(!np)
 	{
 		printf("File cannot be opened");
 	}
 	printf("Output file created\n"); 
-	parseFiles(fp, np);
+	
+	
+	// Parses the files using the fscanf() function
+	int i, j;
 
-	pthread_t thread1,thread2;
+	//Parsing for input and output files
+	for (i = 0; i < n; i++)
+	{
+		fscanf(np , "%s %s %d", &(linux_machines[i].name), &(linux_machines[i].ip), (linux_machines[i].port));
+		//printf("%s %s %d", (linux_machines[i].name), (linux_machines[i].ip), (linux_machines[i].port));	
+		for(j = 0; j < n; j++)
+		{
+			fscanf(fp, "%d", &matrix[i][j]);
+			printf("The output is: %d\n", &matrix[i][j]);
+		}
+		printf("\n");
+	}
+	perror("Files parsed\n");
+
 	pthread_mutex_init(&lock, NULL);
+	pthread_t thread1, thread2;
 
 	struct sockaddr_in server_addr;
 	struct sockaddr_storage udp_storage;
@@ -123,11 +139,15 @@ int main(int argc, char * argv[])
 
 	// set address
 	server_addr.sin_family = AF_INET;
-	server_addr.sin_port = htons(atoi(argv[1])); // Makes port into integer
-	//server_addr.sin_addr = *((struct in_addr *)host->h_addr);
-	inet_pton(AF_INET, argv[2], &server_addr.sin_addr.s_addr);	
+	server_addr.sin_port = htons(_port); // Makes port into integer
+	server_addr.sin_addr.s_addr = htonl (INADDR_ANY); // Get IP Address
+	//inet_pton(AF_INET, argv[2], &server_addr.sin_addr.s_addr);	
 	memset (server_addr.sin_zero, '\0', sizeof (server_addr.sin_zero));
 	addr_len = sizeof(udp_storage);	
+
+	//Threads
+	pthread_create(&thread1, NULL, receiveInfo, NULL);
+	pthread_create(&thread2, NULL, linkState, NULL);
 
 	// open socket
 	if ((sock = socket(AF_INET, SOCK_DGRAM, 0)) == -1)
@@ -143,13 +163,61 @@ int main(int argc, char * argv[])
         	exit(1);
     	}
 
-	//Threads
-	pthread_create(&thread1, NULL, receiveInfo, NULL);
-	pthread_create(&thread2, NULL, linkState, NULL);
+	perror("Thread creation preconditions checked\n");
 
+	while(1)
+	{
+		sleep(10);
+		
+		int ncost, neighbor;
+		struct sockaddr_in destination_addr;
+
+		printf("Input updates\n");
+		scanf("%d %d", &neighbor, &ncost);
+		
+		pthread_mutex_lock(&lock);
+		matrix[_id][neighbor] = ncost;
+		matrix[neighbor][_id] = ncost;
+		pthread_mutex_unlock(&lock);
+
+		sendData[0] = _id;
+		sendData[1] = neighbor;
+		sendData[2] = ncost;
+
+		printf("The new distance is: %d\n", ncost);			
+
+		int j;
+		for( j = 0; j < n; j++)
+		{	
+			destination_addr.sin_family = AF_INET;
+			destination_addr.sin_port = htons(linux_machines[i].port);
+			inet_pton(AF_INET, linux_machines[i].ip, &destination_addr.sin_addr.s_addr);
+			memset(destination_addr.sin_zero, '\0', sizeof (destination_addr.sin_zero));	
+			addr_len = sizeof(destination_addr);
+			
+			// open socket
+			if ((sock = socket(AF_INET, SOCK_DGRAM, 0)) == -1)
+			{
+				perror("socket");
+				exit(1);
+			}	
+	
+			int x;
+			for(x = 0; x < n; x++)
+			{
+				if(x != _id)
+				{
+					sendto(sock, &sendData, sizeof(sendData), 0, (struct sockaddr *) &destination_addr, addr_len);
+				}
+			}
+		}
+	}	
+	fclose(fp);
+	fclose(np);
 	return 0;
 }
 
+// Finds minimum Distance used for link state
 int minDist(int dist[], int sptSet[])
 {
 	int min = 9999, min_Index;
@@ -165,6 +233,8 @@ int minDist(int dist[], int sptSet[])
 	return min_Index;
 }
 
+
+// Does Dijkstra's algorithm
 void link_State(int cost[n][n], int router)
 {
 	int dist[n];
@@ -173,7 +243,7 @@ void link_State(int cost[n][n], int router)
 	int i;
 	for(i = 0; i < n; i++)
 	{
-		dist[i] = INT_MAX;
+		dist[i] = 9999;
 		sptSet[i] = 0;
 	}
 
@@ -188,7 +258,7 @@ void link_State(int cost[n][n], int router)
 		int v;
 		for(v = 0; v < n; v++)
 		{
-			if(!sptSet[v] && cost[a][v] && dist[a] != INT_MAX && dist[a] + cost[a][v] < dist[v])
+			if(!sptSet[v] && cost[a][v] && dist[a] != 9999 && dist[a] + cost[a][v] < dist[v])
 			{
 				dist[v] = dist[a] + cost[a][v];
 			}	
@@ -200,75 +270,6 @@ void link_State(int cost[n][n], int router)
 	{
 		printf("%d ", dist[x]);
 	}
-}
-
-// Parses the files using the fscanf() function
-void parseFiles(FILE * input, FILE * output)
-{
-	int i;
-	int parse;
-
-	//Parsing for input file
-	for (i = 0; i < n; i++)
-	{	
-		int j;
-		for(j = 0; j < n; j++)
-		{
-			if(parse = (fscanf(input, "%d", &matrix[i][j])) != 1)
-			{	
-				break;
-			}
-		}
-		printf("\n");
-	}
-	perror("Input file parsed\n");
-
-	// Parsing for output file
-	int x;
-	for(x = 0; x < n; x++)
-	{
-		if(parse = (fscanf(output , "%s %s %d", &(linux_machines[i].name), &(linux_machines[i].ip), (linux_machines[i].port))) < 1)
-		{
-			break;
-		}
-		printf("%s %s %d", (linux_machines[i].name), (linux_machines[i].ip), (linux_machines[i].port));
-	}
-	perror("Output file parsed\n");
-	return;
-}
-
-// Sends Cost update
-void * sendInfo()
-{
-	struct sockaddr_in destination_addr;
-	socklen_t addr_len;
-
-	int i;
-	for(i = 0; i < n; i++)
-	{
-		destination_addr.sin_family = AF_INET;
-		destination_addr.sin_port = htons(linux_machines[i].port);
-		inet_pton(AF_INET, linux_machines[i].ip, &destination_addr.sin_addr.s_addr);
-		memset(destination_addr.sin_zero, '\0', sizeof (destination_addr.sin_zero));	
-		addr_len = sizeof(destination_addr);
-	}
-
-	// open socket
-	if ((sock = socket(AF_INET, SOCK_DGRAM, 0)) == -1)
-	{
-		perror("socket");
-		exit(1);
-	}
-
-	int j;
-	for(j = 0; j < n; j++)
-	{
-		if(j != _id)
-		{
-			sendto(sock, &sendData, sizeof(sendData), 0, (struct sockaddr *) &destination_addr, addr_len);
-		}
-	}
-	perror("The package has been sent");
 }
 
 // Receives cost update from other machines
@@ -283,9 +284,11 @@ void * receiveInfo()
 		int data1 = ntohl(recvData[0]);
 		int data2 = ntohl(recvData[1]);
 
+		pthread_mutex_lock(&lock);
 		matrix[data1][data2] = ntohl(recvData[2]);
 		matrix[data2][data1] = ntohl(recvData[2]);
-
+		pthread_mutex_unlock(&lock);
+	
 		printTable();
 	}
 	return NULL;
@@ -295,6 +298,24 @@ void * receiveInfo()
 void * linkState()
 {
 	int delay;
+	while(1)
+	{
+		delay = (rand() % 10) + 10;
+		printf("Generated random number between 10 and 20\n");
+		sleep(delay);
+
+		printTable();
+		
+		pthread_mutex_lock(&lock);
+		int u;
+		for(u = 0; u < n; u++)
+		{
+			printf("Node %d\n", u);
+			link_State(matrix, u);
+		}
+		pthread_mutex_unlock(&lock);
+	}
+	return NULL;
 }
 
 // Prints the table
@@ -310,9 +331,10 @@ void printTable()
 		int j;
 		for(j = 0; j < n; j++)
 		{
-			printf("%d", matrix[i][j]);
+			printf(" %d", matrix[i][j]);
 		}
 		printf("\n");
 	}
+	printf("\n");
 	pthread_mutex_unlock(&lock);
 }
