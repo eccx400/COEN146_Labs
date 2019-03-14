@@ -89,7 +89,6 @@ void printTable(void);
 // The main function to take in keyboard input and use UDP
 int main(int argc, char * argv[])
 {
-	perror("Everything has been initialized correctly\n");
 	if (argc != 5)
         {
                 printf ("Usage: %s <id> <nmachines> <cost_file> <host_files> \n",argv[0]);
@@ -121,71 +120,46 @@ int main(int argc, char * argv[])
 	{
 		fscanf(np , "%s %s %d", (linux_machines[i].name), (linux_machines[i].ip), &(linux_machines[i].port));
 		//printf("%s %s %d", (linux_machines[i].name), (linux_machines[i].ip), (linux_machines[i].port));	
-		for(j = 0; j < n; j++)
-		{
-			fscanf(fp, "%d", &matrix[i][j]);
-			//printf("The output is: %d\n", &matrix[i][j]);
-		}
-		printf("\n");
+		fscanf(fp, "%d %d %d %d", &matrix[i][0], &matrix[i][1], &matrix[i][2], &matrix[i][3]); 
 	}
 	perror("Files parsed\n");
+	fclose(fp);
+	fclose(np);
+
+	srand(time(NULL));
 
 	pthread_mutex_init(&lock, NULL);
 	pthread_t thread1, thread2;
 
-	struct sockaddr_in server_addr;
-	struct sockaddr_storage udp_storage;
-	socklen_t addr_len, caddr_len;
-
-	// set address
-	server_addr.sin_family = AF_INET;
-	server_addr.sin_port = htons(_port); // Makes port into integer
-	server_addr.sin_addr.s_addr = htonl (INADDR_ANY); // Get IP Address
-	//inet_pton(AF_INET, argv[2], &server_addr.sin_addr.s_addr);	
-	memset (server_addr.sin_zero, '\0', sizeof (server_addr.sin_zero));
-	addr_len = sizeof(udp_storage);	
-
 	//Threads
 	pthread_create(&thread1, NULL, receiveInfo, NULL);
-	pthread_create(&thread2, NULL, linkState, NULL);
-
-	// open socket
-	if ((sock = socket(AF_INET, SOCK_DGRAM, 0)) == -1)
-	{
-		perror("socket");
-		exit(1);
-	}
-
-	//Bind socket to address
-   	if (bind(sock,(struct sockaddr *)&server_addr, sizeof(struct sockaddr)) != 0)
-    	{
-        	perror("Bind");
-        	exit(1);
-    	}
+	pthread_create(&thread2, NULL, linkState, NULL);	
 
 	perror("Thread creation preconditions checked\n");
 
-	int count = 0;
-	while( count < 3)
+	sendData[0] = _id;
+	printf("Initialized Machine %d\n", _id);
+	// Thread 2 updates the neighboring table and sends the messages
+	// to the other node using UDP
+	while(1)
 	{
-		sleep(10);
-		
-		int ncost, neighbor;
-		struct sockaddr_in destination_addr;
+		sleep(10); // Sends every 10 seconds
 
-		printf("Input updates using <neighbor> <ncost>:\n", _id);
-		scanf("%d %d", &neighbor, &ncost);
+		int neighbors, my_id, ncost;
+		my_id = sendData[0];
+		neighbors = sendData[1];
+		ncost = sendData[2];
+	
+		printf("Input updates using <neighbor> <ncost>:\n", my_id);
+		scanf("%d %d", &neighbors, &ncost);
 		
 		pthread_mutex_lock(&lock);
-		matrix[_id][neighbor] = ncost;
-		matrix[neighbor][_id] = ncost;
+		matrix[my_id][neighbor] = ncost;
+		matrix[neighbor][my_id] = ncost;
 		pthread_mutex_unlock(&lock);
 
-		sendData[0] = _id;
-		sendData[1] = neighbor;
-		sendData[2] = ncost;
-
-		printf("The new distance is: %d\n", ncost);			
+		printf("The new distance tableis: \n");	
+		printTble();		
 
 		int j;
 		for( j = 0; j < n; j++)
@@ -195,28 +169,17 @@ int main(int argc, char * argv[])
 			inet_pton(AF_INET, linux_machines[i].ip, &destination_addr.sin_addr.s_addr);
 			memset(destination_addr.sin_zero, '\0', sizeof (destination_addr.sin_zero));	
 			addr_len = sizeof(destination_addr);
-			
+
 			// open socket
-			if ((sock = socket(AF_INET, SOCK_DGRAM, 0)) == -1)
+			if ((_sock = socket(AF_INET, SOCK_DGRAM, 0)) == -1)
 			{
 				perror("socket");
 				exit(1);
-			}	
-	
-			int x;
-			for(x = 0; x < n; x++)
-			{
-				if(x != _id)
-				{
-					sendto(sock, &sendData, sizeof(sendData), 0, (struct sockaddr *) &destination_addr, addr_len);
-				}
 			}
+			sendto(_sock, &sendData, sizeof(sendData), 0, (struct sockaddr *) &destination_addr, addr_len);
 		}
-		count++;
 	}	
-	sleep(30);
-	fclose(fp);
-	fclose(np);
+	sleep(30); // Finishes 30 seconds after executing two changes
 	return 0;
 }
 
@@ -277,9 +240,36 @@ void link_State(int cost[n][n], int router)
 // Receives cost update from other machines
 void * receiveInfo()
 {
+	int sock;
+	struct sockaddr_in server_addr;
+	struct sockaddr_storage udp_storage;
+	socklen_t addr_len, caddr_len;
+
+	// set address
+	server_addr.sin_family = AF_INET;
+	server_addr.sin_port = htons(_port); // Makes port into integer
+	server_addr.sin_addr.s_addr = htonl (INADDR_ANY); // Get IP Address
+	//inet_pton(AF_INET, argv[2], &server_addr.sin_addr.s_addr);	
+	memset (server_addr.sin_zero, '\0', sizeof (server_addr.sin_zero));
+	addr_len = sizeof(udp_storage);	
+	
+	// open socket
+	if ((sock = socket(AF_INET, SOCK_DGRAM, 0)) == -1)
+	{
+		perror("socket");
+		exit(1);
+	}
+
+	//Bind socket to address
+   	if (bind(sock,(struct sockaddr *)&server_addr, sizeof(struct sockaddr)) != 0)
+    	{
+        	perror("Bind");
+        	exit(1);
+    	}
+	
 	while(1)
 	{
-		int nBytes = recvfrom (sock, recvData, sizeof(recvData), 0, NULL, NULL);
+		int nBytes = recvfrom (sock, &recvData, sizeof(recvData), 0, NULL, NULL);
 		perror("Got information\n");
 		printf("Data Received: %d\n", nBytes);
 
@@ -290,6 +280,9 @@ void * receiveInfo()
 		matrix[data1][data2] = ntohl(recvData[2]);
 		matrix[data2][data1] = ntohl(recvData[2]);
 		pthread_mutex_unlock(&lock);
+
+		printf("\n Updated Cost Table: \n");
+		printTable();
 	}
 	return NULL;
 }
@@ -298,20 +291,21 @@ void * receiveInfo()
 void * linkState()
 {
 	int delay;
+
+	printTable();
+	
 	while(1)
 	{
-		delay = (rand() % 10) + 10;
+		delay = (rand() % 11) + 10;
 		printf("Sleeptime is: %d\n", delay);
 		sleep(delay);
-
-		//printTable();
 		
 		pthread_mutex_lock(&lock);
 		int srcnode;
-		for(srcnode = 0; srcnode < n; ++srcnode)
-		{
-			printf("Node %d\n", srcnode);
+		for(srcnode = 0; srcnode < n; srcnode++)
+		{	
 			link_State(matrix, srcnode);
+			printf("Node: %d\n", srcnode);
 		}
 		pthread_mutex_unlock(&lock);
 		printf("\n");
@@ -329,13 +323,7 @@ void printTable()
 	int i;
 	for(i = 0; i < n; i++)
 	{
-		int j;
-		for(j = 0; j < n; j++)
-		{
-			printf(" %d", matrix[i][j]);
-		}
-		printf("\n");
+		printf("%d %d %d %d\n", matrix[i][0], matrix[i][1], matrix[1][2], matrix[i][3];
 	}
-	printf("\n");
 	pthread_mutex_unlock(&lock);
 }
