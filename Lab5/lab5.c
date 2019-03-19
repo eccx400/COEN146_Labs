@@ -67,7 +67,7 @@ typedef struct
  */
 int n = 4; // Size of row and column of matrix
 int matrix[4][4];
-int sock;
+int sock, _sock;
 int _id;
 int _port;
 int recvData[3] = {0};
@@ -137,6 +137,9 @@ int main(int argc, char * argv[])
 
 	perror("Thread creation preconditions checked\n");
 
+	struct sockaddr_in destination_addr;
+	socklen_t addr_len;
+
 	sendData[0] = _id;
 	printf("Initialized Machine %d\n", _id);
 	// Thread 2 updates the neighboring table and sends the messages
@@ -154,29 +157,32 @@ int main(int argc, char * argv[])
 		scanf("%d %d", &neighbors, &ncost);
 		
 		pthread_mutex_lock(&lock);
-		matrix[my_id][neighbor] = ncost;
-		matrix[neighbor][my_id] = ncost;
+		matrix[my_id][neighbors] = ncost;
+		matrix[neighbors][my_id] = ncost;
 		pthread_mutex_unlock(&lock);
 
-		printf("The new distance tableis: \n");	
-		printTble();		
+		printf("The new distance table is: \n");	
+		printTable();		
 
 		int j;
 		for( j = 0; j < n; j++)
 		{	
-			destination_addr.sin_family = AF_INET;
-			destination_addr.sin_port = htons(linux_machines[i].port);
-			inet_pton(AF_INET, linux_machines[i].ip, &destination_addr.sin_addr.s_addr);
-			memset(destination_addr.sin_zero, '\0', sizeof (destination_addr.sin_zero));	
-			addr_len = sizeof(destination_addr);
-
-			// open socket
-			if ((_sock = socket(AF_INET, SOCK_DGRAM, 0)) == -1)
+			if(_id != j)
 			{
-				perror("socket");
-				exit(1);
+				destination_addr.sin_family = AF_INET;
+				destination_addr.sin_port = htons(linux_machines[i].port);
+				inet_pton(AF_INET, linux_machines[i].ip, &destination_addr.sin_addr.s_addr);
+				memset(destination_addr.sin_zero, '\0', sizeof (destination_addr.sin_zero));
+				addr_len = sizeof(destination_addr);
+
+				// open socket
+				if ((_sock = socket(AF_INET, SOCK_DGRAM, 0)) == -1)
+				{
+					perror("socket");
+					exit(1);
+				}
+				sendto(_sock, &sendData, sizeof(sendData), 0, (struct sockaddr *) &destination_addr, addr_len);
 			}
-			sendto(_sock, &sendData, sizeof(sendData), 0, (struct sockaddr *) &destination_addr, addr_len);
 		}
 	}	
 	sleep(30); // Finishes 30 seconds after executing two changes
@@ -243,7 +249,7 @@ void * receiveInfo()
 	int sock;
 	struct sockaddr_in server_addr;
 	struct sockaddr_storage udp_storage;
-	socklen_t addr_len, caddr_len;
+	socklen_t addr_len;
 
 	// set address
 	server_addr.sin_family = AF_INET;
@@ -323,7 +329,7 @@ void printTable()
 	int i;
 	for(i = 0; i < n; i++)
 	{
-		printf("%d %d %d %d\n", matrix[i][0], matrix[i][1], matrix[1][2], matrix[i][3];
+		printf("%d %d %d %d\n", matrix[i][0], matrix[i][1], matrix[1][2], matrix[i][3]);
 	}
 	pthread_mutex_unlock(&lock);
 }
